@@ -18,6 +18,10 @@ SET_FLOOR_DELTA = 0
 AIR_TEMP_STOCK = 23
 FLOOR_DELTA_STOCK = 1.5
 
+HOURS = ''
+HOURS_STOCK = '5 7 13 16 17 19 22'
+SET_HOURS = 0
+
 BMP_T = 0
 BMP_P = 0
 DS_1 = 0
@@ -28,6 +32,7 @@ DHT_T = 0
 air_temp_path = 'air_temp'
 floor_delta_path = 'floor_delta'
 relay_switch_path = 'relay_switch'
+hours_path = 'hours'
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
@@ -43,9 +48,16 @@ try:
 except:
     floor = open(floor_delta_path, 'w')
     floor.write(str(FLOOR_DELTA_STOCK))
+try:
+    hours = open(hours_path)
+except:
+    hours = open(hours_path, 'w')
+    hours.write(str(HOURS_STOCK))
 
 AIR_TEMP=air.read()
 FLOOR_DELTA = floor.read()
+HOURS = hours.read()
+hours.close()
 floor.close()
 air.close()
 
@@ -54,6 +66,9 @@ if str(AIR_TEMP) == "":
 
 if str(FLOOR_DELTA) == '':
     FLOOR_DELTA = FLOOR_DELTA_STOCK
+	
+if str(HOURS) == '':
+    HOURS = HOURS_STOCK
 
 # define sensors for DHT and BMP
 sensor_dht = Adafruit_DHT.DHT22
@@ -124,6 +139,12 @@ def write_air_temp():
     f = open(air_temp_path, 'w')
     f.write(str(AIR_TEMP))
     f.close()
+
+def write_hours():
+    global HOURS
+    f = open(hours_path, 'w')
+    f.write(str(HOURS))
+    f.close()
 	
 def handle(msg):
     global SECURE
@@ -135,6 +156,9 @@ def handle(msg):
 	
     global SET_FLOOR_DELTA
     global FLOOR_DELTA
+	
+	global HOURS
+	global SET_HOURS
 
     chat_id = msg['chat']['id']
     command = msg['text']
@@ -154,6 +178,7 @@ def handle(msg):
         + "\n /relay_auto - AUTO MODE"
         + "\n /set_air_temp - Set up AIR_TEMP"
         + "\n /set_floor_delta - Set up delta between grebyonka"
+		+ "\n /set_hours - Se up hours when relay will be enable in AUTO mode"
         )
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
@@ -161,6 +186,9 @@ def handle(msg):
     elif command == '/set_floor_delta':
         SET_FLOOR_DELTA = 1
         bot.sendMessage(chat_id, "Enter value")
+	elif command == '/set_hours':
+        SET_HOURS = 1
+        bot.sendMessage(chat_id, "Enter values separated by space")
     elif command == '/relay_on':
         bot.sendMessage(chat_id, "Relay enabled")
         enable_relay()
@@ -174,7 +202,7 @@ def handle(msg):
         get_values()
         file_relay = open ('relay_switch', 'r')
         bot.sendMessage(chat_id,
-        "RELAY STATUS: " + file_relay.read()
+        "RELAY MODE STATUS: " + file_relay.read()
         + "\nDS_1 = " + str(DS_1) + " C"
         + "\nDS_2 = " + str(DS_2) + " C"
         + "\nBMP_PRESS = " + str(BMP_P) + " hg mm"
@@ -196,6 +224,12 @@ def handle(msg):
             FLOOR_DELTA = command
             write_floor_delta()
             bot.sendMessage(chat_id, "FLOOR_DELTA now is " + str(FLOOR_DELTA))
+			
+		elif SET_HOURS == 1:
+            SET_HOURS = 0
+            HOURS = command
+            write_hours()
+            bot.sendMessage(chat_id, "HOURS now is " + str(HOURS))
 			
         elif SECURE == 0:
             if PASS_COUNT > 3:
