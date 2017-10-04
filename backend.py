@@ -161,14 +161,15 @@ while True:
 
     DS_DELTA = DS_2 - DS_1
     TEMP_AVR = (BMP_T + DHT_T) / 2
-    CURR_HOUR = str(int(time.strftime("%-H")) + 3)
+    CURR_HOUR = int(time.strftime("%-H")) + 3
 
     # Parsing hours
     HOURS_RELAY_ENABLE = 0
     HOURS_LIST = HOURS.split(" ")
     for temp in HOURS_LIST:
-        if str(temp) == str(CURR_HOUR):
+        if int(temp) == int(CURR_HOUR):
             HOURS_RELAY_ENABLE = 1
+            break
 
     print ("\n DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA " + str(FLOOR_DELTA)
             + "\n TEMP AVR " + str(TEMP_AVR) + " vs AIR TEMP " + str(AIR_TEMP)
@@ -182,8 +183,8 @@ while True:
     elif str(RELAY_STATUS) == 'off':
         disable_relay()
     elif str(RELAY_STATUS) == 'auto':
-        if TEMP_AVR < AIR_TEMP and DS_DELTA > FLOOR_DELTA and HOURS_RELAY_ENABLE == 1:
+        if float(TEMP_AVR) < float(AIR_TEMP) and float(DS_DELTA) > float(FLOOR_DELTA) and HOURS_RELAY_ENABLE == 1:
             enable_relay()
         else:
             disable_relay()
-    time.sleep(200)
+    time.sleep(60)

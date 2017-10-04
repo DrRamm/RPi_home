@@ -109,7 +109,7 @@ def get_values():
         t2.start()
 
         while DS_1 == 0 or DS_2 == 0:
-            time.sleep(0.05)
+            time.sleep(0.1)
 
 def enable_relay():
     f = open(relay_switch_path, 'w')
@@ -159,28 +159,28 @@ def handle(msg):
     print 'Got command: %s' % command
 
     for temp in ALLOWED_USERS:
-        if str(chat_id) != str(temp):
+        if int(chat_id) != int(temp):
             if WRONG_ATTEMPTS < 2 :
                 print msg['from']['username']
                 print msg['from']['id']
                 bot.sendMessage(chat_id, "Wrong user")
-                WRONG_ATTEMPTS+=1
+                WRONG_ATTEMPTS += 1
             elif WRONG_ATTEMPTS == 2:
                 bot.sendMessage(chat_id, 'Hey, buddy, I think this stuff will suit you more than trying to use my bot')
                 bot.sendPhoto(chat_id, 'http://pezik.com/gay/img/1/01.jpg', caption=None, disable_notification=None, reply_to_message_id=None, reply_markup=None)
 
             return
 
-    if command == '/start':
-            bot.sendMessage(chat_id,
+	if command == '/start':
+		bot.sendMessage(chat_id,
         "  /get - get status and values from sensors"
-        + "\n /relay_on - Enable relay"
-        + "\n /relay_off - Disable relay"
-        + "\n /relay_auto - AUTO MODE"
-        + "\n /set_air_temp - Set up AIR_TEMP"
-        + "\n /set_floor_delta - Set up delta between grebyonka"
-        + "\n /set_hours - Se up hours when relay will be enable in AUTO mode"
-        + "\n /set_default_hours - reset all to default"
+        + "\n\n /relay_on - Enable relay"
+        + "\n\n /relay_off - Disable relay"
+        + "\n\n /relay_auto - AUTO MODE"
+        + "\n\n /set_air_temp - Set up AIR_TEMP"
+        + "\n\n /set_floor_delta - Set up delta between grebyonka"
+        + "\n\n /set_hours - Se up hours when relay will be enable in AUTO mode"
+        + "\n\n /set_default_hours - reset all to default"
         )
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
@@ -210,13 +210,15 @@ def handle(msg):
         file_hours = open (hours_path, 'r')
         bot.sendMessage(chat_id,
         "RELAY MODE STATUS: " + file_relay.read()
-        + "\nDS_1 = " + str(DS_1) + " C"
+        + "\n\nDS_1 = " + str(DS_1) + " C"
         + "\nDS_2 = " + str(DS_2) + " C"
-        + "\nBMP_PRESS = " + str(BMP_P) + " hg mm"
+        + "\nDS_2 - DS_1 = " + str(float(DS_2)-float(DS_1))
+        + "\n\nBMP_PRESS = " + str(BMP_P) + " hg mm"
         + "\nBMP_TEMP = " + str(BMP_T) + " C"
-        + "\nDHT_H = " + str(DHT_H) + " %"
+        + "\n\nDHT_H = " + str(DHT_H) + " %"
         + "\nDHT_T = " + str(DHT_T) + " C"
-        + "\nFLOOR_DELTA = " + str(FLOOR_DELTA) + " C"
+        + "\n\nAVERAGE AIR TEMP " + str((float(BMP_T) + float(DHT_T)) / 2)
+        + "\n\nFLOOR_DELTA = " + str(FLOOR_DELTA) + " C"
         + "\nAIR_TEMP = " + str(AIR_TEMP) + " C"
         + "\nHOURS = " + file_hours.read())
         file_relay.close()
