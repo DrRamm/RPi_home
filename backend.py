@@ -24,21 +24,21 @@ hours_path = 'hours'
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
 
-try: 
+try:
     air = open(air_temp_path, 'r')
 except:
     print '\n air file doesnt exist'
-	
-try: 
+
+try:
     floor = open(floor_delta_path, 'r')
 except:
     print '\n floor file doesnt exist'
 
-try: 
+try:
     hours = open(hours_path, 'r')
 except:
     print '\n hours file doesnt exist'
-	
+
 # get temp from last tg command
 AIR_TEMP=air.read()
 FLOOR_DELTA = floor.read()
@@ -106,34 +106,34 @@ def get_relay_status():
     global RELAY_STATUS
     f = open(relay_switch_path, 'r')
     RELAY_STATUS = f.read()
-	if str(RELAY_STATUS) == "":
+    if str(RELAY_STATUS) == "":
         print "\n RELAY MODE STATUS is empty, using AUTO"
         RELAY_STATUS = 'auto'
-	
+
 def get_floor_delta():
     global FLOOR_DELTA
     f = open(floor_delta_path, 'r')
     FLOOR_DELTA = f.read()
-	if str(FLOOR_DELTA) == '':
+    if str(FLOOR_DELTA) == '':
         print '\n FLOOR_DELTA is empty, using stock'
         FLOOR_DELTA = FLOOR_DELTA_STOCK
-	
+
 def get_air_temp():
     global AIR_TEMP
     f = open(air_temp_path, 'r')
     AIR_TEMP = f.read()
-	if str(AIR_TEMP) == '':
+    if str(AIR_TEMP) == '':
         print '\n AIR_TEMP is empty, using stock'
         AIR_TEMP = AIR_TEMP_STOCK
-		
+
 def get_hours():
     global HOURS
     f = open(hours_path, 'r')
     HOURS = f.read()
-	if str(HOURS) == '':
+    if str(HOURS) == '':
         print '\n HOURS is empty, using stock'
         HOURS = HOURS_STOCK
-	
+
 def enable_relay():
     global GPIO_STAT
     if GPIO_STAT == 0:
@@ -157,25 +157,25 @@ while True:
     get_relay_status()
     get_air_temp()
     get_floor_delta()
-	get_hours()
+    get_hours()
 
     DS_DELTA = DS_2 - DS_1
     TEMP_AVR = (BMP_T + DHT_T) / 2
-	CURR_HOUR = time.strftime("%H")	
-	
-	# Parsing hours
-	HOURS_RELAY_ENABLE = 0
-	HOURS_LIST = HOURS.split(" ")
-	for temp in HOURS_LIST:
-		if str(temp) == str(CURR_HOUR):
-			HOURS_RELAY_ENABLE = 1
-	
+    CURR_HOUR = str(int(time.strftime("%-H")) + 3)
+
+    # Parsing hours
+    HOURS_RELAY_ENABLE = 0
+    HOURS_LIST = HOURS.split(" ")
+    for temp in HOURS_LIST:
+        if str(temp) == str(CURR_HOUR):
+            HOURS_RELAY_ENABLE = 1
+
     print ("\n DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA " + str(FLOOR_DELTA)
             + "\n TEMP AVR " + str(TEMP_AVR) + " vs AIR TEMP " + str(AIR_TEMP)
             + "\n RELAY MODE STATUS " + str(RELAY_STATUS)
             + " \n RELAY " + str(GPIO_STAT)
-			+ "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
-			+ "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE))
+            + "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
+            + "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE))
 
     if str(RELAY_STATUS) == 'on':
         enable_relay()

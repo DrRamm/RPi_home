@@ -1,3 +1,4 @@
+
 import time
 import random
 import datetime
@@ -10,7 +11,7 @@ import threading # DS
 DHT_PIN = 17
 
 SECURE = 0
-PASS = 
+PASS =
 PASS_COUNT = 0
 
 SET_AIR_TEMP = 0
@@ -37,11 +38,11 @@ ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
 
 try:
-    air = open(air_temp_path, )
+    air = open(air_temp_path)
 except:
     air = open (air_temp_path, 'w')
     air.write(str(AIR_TEMP_STOCK))
-	
+
 try:
     floor = open(floor_delta_path)
 except:
@@ -65,7 +66,7 @@ if str(AIR_TEMP) == "":
 
 if str(FLOOR_DELTA) == '':
     FLOOR_DELTA = FLOOR_DELTA_STOCK
-	
+
 if str(HOURS) == '':
     HOURS = HOURS_STOCK
 
@@ -116,48 +117,45 @@ def enable_relay():
     f = open(relay_switch_path, 'w')
     f.write('on')
     f.close()
-	
+
 def disable_relay():
     f = open(relay_switch_path, 'w')
     f.write('off')
     f.close()
-	
+
 def auto_relay():
     f = open(relay_switch_path, 'w')
     f.write('auto')
     f.close()
-	
+
 def write_floor_delta():
-    global FLOOR_DELTA
     f = open(floor_delta_path, 'w')
     f.write(str(FLOOR_DELTA))
     f.close()
-	
+
 def write_air_temp():
-    global AIR_TEMP
     f = open(air_temp_path, 'w')
     f.write(str(AIR_TEMP))
     f.close()
 
 def write_hours():
-    global HOURS
     f = open(hours_path, 'w')
     f.write(str(HOURS))
     f.close()
-	
+
 def handle(msg):
     global SECURE
     global PASS
     global PASS_COUNT
-	
+
     global SET_AIR_TEMP
     global AIR_TEMP
-	
+
     global SET_FLOOR_DELTA
     global FLOOR_DELTA
-	
-	global HOURS
-	global SET_HOURS
+
+    global HOURS
+    global SET_HOURS
 
     chat_id = msg['chat']['id']
     command = msg['text']
@@ -177,7 +175,7 @@ def handle(msg):
         + "\n /relay_auto - AUTO MODE"
         + "\n /set_air_temp - Set up AIR_TEMP"
         + "\n /set_floor_delta - Set up delta between grebyonka"
-		+ "\n /set_hours - Se up hours when relay will be enable in AUTO mode"
+                + "\n /set_hours - Se up hours when relay will be enable in AUTO mode"
         )
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
@@ -185,7 +183,7 @@ def handle(msg):
     elif command == '/set_floor_delta':
         SET_FLOOR_DELTA = 1
         bot.sendMessage(chat_id, "Enter value")
-	elif command == '/set_hours':
+    elif command == '/set_hours':
         SET_HOURS = 1
         bot.sendMessage(chat_id, "Enter values separated by space")
     elif command == '/relay_on':
@@ -199,7 +197,8 @@ def handle(msg):
         auto_relay()
     elif command == '/get':
         get_values()
-        file_relay = open ('relay_switch', 'r')
+        file_relay = open (relay_switch_path, 'r')
+        file_hours = open (hours_path, 'r')
         bot.sendMessage(chat_id,
         "RELAY MODE STATUS: " + file_relay.read()
         + "\nDS_1 = " + str(DS_1) + " C"
@@ -209,40 +208,42 @@ def handle(msg):
         + "\nDHT_H = " + str(DHT_H) + " %"
         + "\nDHT_T = " + str(DHT_T) + " C"
         + "\nFLOOR_DELTA = " + str(FLOOR_DELTA) + " C"
-        + "\nAIR_TEMP = " + str(AIR_TEMP) + " C")
+        + "\nAIR_TEMP = " + str(AIR_TEMP) + " C"
+        + "\nHOURS = " + file_hours.read())
         file_relay.close()
+        file_hours.close()
     else:
         if SET_AIR_TEMP == 1:
             SET_AIR_TEMP = 0
             AIR_TEMP = command
             write_air_temp()
             bot.sendMessage(chat_id, "AIR_TEMP now is " + str(AIR_TEMP))
-			
+
         elif SET_FLOOR_DELTA == 1:
             SET_FLOOR_DELTA = 0
             FLOOR_DELTA = command
             write_floor_delta()
             bot.sendMessage(chat_id, "FLOOR_DELTA now is " + str(FLOOR_DELTA))
-			
-		elif SET_HOURS == 1:
+
+        elif SET_HOURS == 1:
             SET_HOURS = 0
             HOURS = command
             write_hours()
             bot.sendMessage(chat_id, "HOURS now is " + str(HOURS))
-			
+
         elif SECURE == 0:
             if PASS_COUNT > 3:
                 bot.sendMessage(chat_id, "Get the fuck out!")
-				
+
             elif str(PASS)==command:
                 bot.sendMessage(chat_id, "Nice, now You can use /start or etc")
                 SECURE = 1
                 PASS_COUNT = 0
-				
+
             else:
                 bot.sendMessage(chat_id, "Wrong pass, keep in ur mid that u have 4 attemtps")
                 PASS_COUNT+=1
-				
+
 bot = telepot.Bot('')
 
 MessageLoop(bot, handle).run_as_thread()
