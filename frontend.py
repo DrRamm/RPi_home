@@ -7,11 +7,10 @@ import Adafruit_DHT  # DHT
 import Adafruit_BMP.BMP085 as BMP085 # BMP
 import threading # DS
 
-DHT_PIN = 17
+ALLOWED_USERS = ['61099099']
+WRONG_ATTEMPTS = 0
 
-SECURE = 0
-PASS =
-PASS_COUNT = 0
+DHT_PIN = 17
 
 SET_AIR_TEMP = 0
 SET_FLOOR_DELTA = 0
@@ -110,7 +109,7 @@ def get_values():
         t2.start()
 
         while DS_1 == 0 or DS_2 == 0:
-            time.sleep(0.1)
+            time.sleep(0.05)
 
 def enable_relay():
     f = open(relay_switch_path, 'w')
@@ -143,9 +142,7 @@ def write_hours():
     f.close()
 
 def handle(msg):
-    global SECURE
-    global PASS
-    global PASS_COUNT
+    global WRONG_ATTEMPTS
 
     global SET_AIR_TEMP
     global AIR_TEMP
@@ -161,12 +158,20 @@ def handle(msg):
 
     print 'Got command: %s' % command
 
-    if SECURE == 0 and command[0][0] == '/':
-        if PASS_COUNT < 4:
-            bot.sendMessage(chat_id, "Enter password")
-        elif PASS_COUNT == 4:
-            bot.sendMessage(chat_id, "See you later!")
-    elif command == '/start':
+    for temp in ALLOWED_USERS:
+        if str(chat_id) != str(temp):
+            if WRONG_ATTEMPTS < 2 :
+                print msg['from']['username']
+                print msg['from']['id']
+                bot.sendMessage(chat_id, "Wrong user")
+                WRONG_ATTEMPTS+=1
+            elif WRONG_ATTEMPTS == 2:
+                bot.sendMessage(chat_id, 'Hey, buddy, I think this stuff will suit you more than trying to use my bot')
+                bot.sendPhoto(chat_id, 'http://pezik.com/gay/img/1/01.jpg', caption=None, disable_notification=None, reply_to_message_id=None, reply_markup=None)
+
+            return
+
+    if command == '/start':
             bot.sendMessage(chat_id,
         "  /get - get status and values from sensors"
         + "\n /relay_on - Enable relay"
@@ -235,23 +240,10 @@ def handle(msg):
             write_hours()
             bot.sendMessage(chat_id, "HOURS now is " + str(HOURS))
 
-        elif SECURE == 0:
-            if PASS_COUNT > 3:
-                bot.sendMessage(chat_id, "Get the fuck out!")
-
-            elif str(PASS)==command:
-                bot.sendMessage(chat_id, "Nice, now You can use /start or etc")
-                SECURE = 1
-                PASS_COUNT = 0
-
-            else:
-                bot.sendMessage(chat_id, "Wrong pass, keep in ur mid that u have 4 attemtps")
-                PASS_COUNT+=1
-
 bot = telepot.Bot('')
 
 MessageLoop(bot, handle).run_as_thread()
 print 'I am listening ...'
 
 while 1:
-    time.sleep(10)
+    time.sleep(5)
