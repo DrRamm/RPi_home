@@ -12,9 +12,14 @@ RELAY_PIN = 24
 RELAY_STATUS = 0
 GPIO_STAT = 0
 
+AIR_TEMP_STOCK = 23
+FLOOR_DELTA_STOCK = 1.5
+HOURS_STOCK = '5 7 13 16 17 19 22'
+
 air_temp_path = 'air_temp'
 floor_delta_path = 'floor_delta'
 relay_switch_path = 'relay_switch'
+hours_path = 'hours'
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
@@ -28,39 +33,47 @@ try:
     floor = open(floor_delta_path, 'r')
 except:
     print '\n floor file doesnt exist'
+
+try: 
+    hours = open(hours_path, 'r')
+except:
+    print '\n hours file doesnt exist'
 	
 # get temp from last tg command
 AIR_TEMP=air.read()
 FLOOR_DELTA = floor.read()
+HOURS = hours.read()
 
 if str(AIR_TEMP) == '':
-    AIR_TEMP = 23
+    AIR_TEMP = AIR_TEMP_STOCK
 if str(FLOOR_DELTA) == '':
-    FLOOR_DELTA = 1.5
+    FLOOR_DELTA = FLOOR_DELTA_STOCK
+if str(HOURS) == '':
+    HOURS = HOURS_STOCK
 
 # define sensors for DHT and BMP
 sensor_dht = Adafruit_DHT.DHT22
 sensor_bmp = BMP085.BMP085()
 
 #initial stuff
-temp_bmp = 0
-press_bmp = 0
+BMP_T = 0
+BMP_P = 0
 DS_1 = 0
 DS_2 = 0
-humid_dht = 0
-temp_dht = 0
+DHT_H = 0
+DHT_T = 0
 
 def get_values():
-        global temp_bmp
-        global press_bmp
+        global BMP_T
+        global BMP_P
         global DS_1
         global DS_2
-        global humid_dht
-        global temp_dht
+        global DHT_H
+        global DHT_T
 
-        humid_dht, temp_dht = Adafruit_DHT.read_retry(sensor_dht, DHT_PIN)
-        temp_bmp=sensor_bmp.read_temperature()
-        press_bmp=sensor_bmp.read_pressure() * 0.0075006375541921
+        DHT_H, DHT_T = Adafruit_DHT.read_retry(sensor_dht, DHT_PIN)
+        BMP_T=sensor_bmp.read_temperature()
+        BMP_P=sensor_bmp.read_pressure() * 0.0075006375541921
 
         def temp1():
             global DS_1
@@ -103,7 +116,7 @@ def get_floor_delta():
     FLOOR_DELTA = f.read()
 	if str(FLOOR_DELTA) == '':
         print '\n FLOOR_DELTA is empty, using stock'
-        FLOOR_DELTA = 1.5
+        FLOOR_DELTA = FLOOR_DELTA_STOCK
 	
 def get_air_temp():
     global AIR_TEMP
@@ -111,7 +124,15 @@ def get_air_temp():
     AIR_TEMP = f.read()
 	if str(AIR_TEMP) == '':
         print '\n AIR_TEMP is empty, using stock'
-        AIR_TEMP = 23
+        AIR_TEMP = AIR_TEMP_STOCK
+		
+def get_hours():
+    global HOURS
+    f = open(hours_path, 'r')
+    HOURS = f.read()
+	if str(HOURS) == '':
+        print '\n HOURS is empty, using stock'
+        HOURS = HOURS_STOCK
 	
 def enable_relay():
     global GPIO_STAT
@@ -136,21 +157,32 @@ while True:
     get_relay_status()
     get_air_temp()
     get_floor_delta()
+	get_hours()
 
     DS_DELTA = DS_2 - DS_1
-    TEMP_AVR = (temp_bmp + temp_dht) / 2
+    TEMP_AVR = (BMP_T + DHT_T) / 2
+	CURR_HOUR = time.strftime("%H")	
+	
+	# Parsing hours
+	HOURS_RELAY_ENABLE = 0
+	HOURS_LIST = HOURS.split(" ")
+	for temp in HOURS_LIST:
+		if str(temp) == str(CURR_HOUR):
+			HOURS_RELAY_ENABLE = 1
 	
     print ("\n DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA " + str(FLOOR_DELTA)
             + "\n TEMP AVR " + str(TEMP_AVR) + " vs AIR TEMP " + str(AIR_TEMP)
             + "\n RELAY MODE STATUS " + str(RELAY_STATUS)
-            + " \n RELAY " + str(GPIO_STAT))
+            + " \n RELAY " + str(GPIO_STAT)
+			+ "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
+			+ "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE))
 
     if str(RELAY_STATUS) == 'on':
         enable_relay()
     elif str(RELAY_STATUS) == 'off':
         disable_relay()
     elif str(RELAY_STATUS) == 'auto':
-        if TEMP_AVR < AIR_TEMP and DS_DELTA > FLOOR_DELTA:
+        if TEMP_AVR < AIR_TEMP and DS_DELTA > FLOOR_DELTA and HOURS_RELAY_ENABLE == 1:
             enable_relay()
         else:
             disable_relay()
