@@ -1,4 +1,3 @@
-
 import time
 import random
 import datetime
@@ -175,7 +174,8 @@ def handle(msg):
         + "\n /relay_auto - AUTO MODE"
         + "\n /set_air_temp - Set up AIR_TEMP"
         + "\n /set_floor_delta - Set up delta between grebyonka"
-                + "\n /set_hours - Se up hours when relay will be enable in AUTO mode"
+        + "\n /set_hours - Se up hours when relay will be enable in AUTO mode"
+        + "\n /set_default_hours - reset all to default"
         )
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
@@ -186,6 +186,10 @@ def handle(msg):
     elif command == '/set_hours':
         SET_HOURS = 1
         bot.sendMessage(chat_id, "Enter values separated by space")
+    elif command == '/set_default_hours':
+        HOURS = HOURS_STOCK
+        write_hours()
+        bot.sendMessage(chat_id, "HOURS now is " + str(HOURS))
     elif command == '/relay_on':
         bot.sendMessage(chat_id, "Relay enabled")
         enable_relay()

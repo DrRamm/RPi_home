@@ -186,4 +186,4 @@ while True:
             enable_relay()
         else:
             disable_relay()
-    time.sleep(2)
+    time.sleep(200)
