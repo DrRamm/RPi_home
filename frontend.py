@@ -179,7 +179,7 @@ def handle(msg):
             if WRONG_ATTEMPTS < 2 :
                 print msg['from']['username']
                 print msg['from']['id']
-                bot.sendMessage(chat_id, "Неверный id = " + str(msg['from']['id']))
+                bot.sendMessage(chat_id, "Неверный id " + str(msg['from']['id']))
                 WRONG_ATTEMPTS += 1
             elif WRONG_ATTEMPTS == 2:
                 bot.sendMessage(chat_id, 'Эй, дружище, займись чем-нибудь другим')
@@ -189,15 +189,15 @@ def handle(msg):
         markup = ReplyKeyboardMarkup(keyboard=[['/get', '/start']])
         bot.sendMessage(chat_id,
         "  /get - получение информации: с датчиков, реле, по часам"
-        + "\n\n /relay_on - Принудительное включение реле"
-        + "\n\n /relay_off - Принудительное выключение реле"
+        + "\n\n /relay_on - Принудительное ВКЛючение реле"
+        + "\n\n /relay_off - Принудительное ВЫКЛючение реле"
         + "\n\n /relay_auto - АВТОматический режим"
         + "\n\n /set_air_temp - Установка желаемой температуры воздуха"
         + "\n\n /set_floor_delta - Установка дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
         + "\n\n /set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
-        + "\n\n /set_hours_on - Включение режима работы по часам"
-        + "\n\n /set_hours_off - Отключение режима работы по часам"
-        + "\n\n /set_default_hours - Сброс часов по умолчанию"
+        + "\n\n /set_hours_on - ВКЛючение режима работы по часам"
+        + "\n\n /set_hours_off - ВЫКЛючение режима работы по часам"
+        + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
         )
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
@@ -231,18 +231,18 @@ def handle(msg):
         get_values()
         bot.sendMessage(chat_id,
         "Режим реле (on|off|auto): " + str(RELAY_MODE)
-        + "\nТекущее состояние реле = " + str(RELAY_STATUS)
+        + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
         + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
         + "\nТемпература подачи = " + str(DS_2)[:5] + " C"
         + "\nТекущая дельта пола = " + str(float(DS_2)-float(DS_1))[:5] + " C"
         + "\n\nДавление = " + str(BMP_P)[:5] + " hg mm"
         + "\nТемпература 1 = " + str(BMP_T)[:5] + " C"
-        + "\n\nВлажноть = " + str(DHT_H)[:5] + " %"
+        + "\n\nВлажноcть = " + str(DHT_H)[:5] + " %"
         + "\nТемпература 2 = " + str(DHT_T)[:5] + " C"
         + "\n\nСредняя температура воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
         + "\n\nДельта пола для срабатывания = " + str(float(FLOOR_DELTA)) + " C"
         + "\nЖелаемая температура воздуха = " + str(float(AIR_TEMP)) + " C"
-        + "\nЧасы = " + str(HOURS)
+        + "\n\nЧасы = " + str(HOURS)
         + "\nРежим работы по часам (on|off): " + str(HOURS_MODE))
     elif command == '/set_id_users':
         SET_USERS = 1
@@ -258,7 +258,7 @@ def handle(msg):
             SET_FLOOR_DELTA = 0
             FLOOR_DELTA = command
             write_deltas()
-            bot.sendMessage(chat_id, "Дельта пола: " + str(FLOOR_DELTA))
+            bot.sendMessage(chat_id, "Дельта пола для срабатывания: " + str(FLOOR_DELTA))
 
         elif SET_HOURS == 1:
             SET_HOURS = 0
