@@ -9,47 +9,23 @@ import threading # DS
 DHT_PIN = 17
 
 RELAY_PIN = 24
+RELAY_MODE = ""
 RELAY_STATUS = 0
-GPIO_STAT = 0
 
 AIR_TEMP_STOCK = 23
 FLOOR_DELTA_STOCK = 1.5
-HOURS_STOCK = '5 7 13 16 17 19 22'
 
-air_temp_path = 'air_temp'
-floor_delta_path = 'floor_delta'
-relay_switch_path = 'relay_switch'
+HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
+HOURS_MODE = ''
+
+air_and_floor_path = 'deltas'
+relay_mode_path = 'relay_mode'
 hours_path = 'hours'
+hours_mode_path = 'hours_mode'
+all_values_path = 'all_values'
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
-
-try:
-    air = open(air_temp_path, 'r')
-except:
-    print '\n air file doesnt exist'
-
-try:
-    floor = open(floor_delta_path, 'r')
-except:
-    print '\n floor file doesnt exist'
-
-try:
-    hours = open(hours_path, 'r')
-except:
-    print '\n hours file doesnt exist'
-
-# get temp from last tg command
-AIR_TEMP=air.read()
-FLOOR_DELTA = floor.read()
-HOURS = hours.read()
-
-if str(AIR_TEMP) == '':
-    AIR_TEMP = AIR_TEMP_STOCK
-if str(FLOOR_DELTA) == '':
-    FLOOR_DELTA = FLOOR_DELTA_STOCK
-if str(HOURS) == '':
-    HOURS = HOURS_STOCK
 
 # define sensors for DHT and BMP
 sensor_dht = Adafruit_DHT.DHT22
@@ -63,6 +39,89 @@ DS_2 = 0
 DHT_H = 0
 DHT_T = 0
 
+def write_all():
+    f = open(all_values_path, 'w')
+    f.write(
+        str(DS_1) + " " +
+        str(DS_2) + " " +
+        str(BMP_T) + " " +
+        str(BMP_P) + " " +
+        str(DHT_H) + " " +
+        str(DHT_T) + " " +
+        str(RELAY_STATUS)
+        )
+    f.close()
+
+def get_relay_mode():
+    global RELAY_MODE
+
+    f = open(relay_mode_path, 'r')
+    RELAY_MODE = f.read()
+
+    if str(RELAY_MODE) == "":
+        print "\n RELAY MODE is empty, using AUTO"
+        RELAY_MODE = 'auto'
+
+def get_air_and_floor():
+    global FLOOR_DELTA
+    global AIR_TEMP
+
+    f = open(air_and_floor_path, 'r')
+    temp_stuff = f.read()
+    FLOOR_DELTA, AIR_TEMP = temp_stuff.split(" ")
+
+    if str(AIR_TEMP) == '':
+        print '\n AIR_TEMP is empty, using stock'
+        AIR_TEMP = AIR_TEMP_STOCK
+
+    if str(FLOOR_DELTA) == '':
+        print '\n FLOOR_DELTA is empty, using stock'
+        FLOOR_DELTA = FLOOR_DELTA_STOCK
+
+def get_hours():
+    global HOURS
+
+    f = open(hours_path, 'r')
+    HOURS = f.read()
+
+    if str(HOURS) == '':
+        print '\n HOURS is empty, using stock'
+        HOURS = HOURS_STOCK
+
+def get_hours_mode():
+    global HOURS_MODE
+
+    f = open(hours_mode_path, 'r')
+    HOURS_MODE = f.read()
+
+    if str(HOURS_MODE) == '':
+        print '\n HOURS_MODE is empty,  enabled by default'
+        HOURS_MODE = 'on'
+
+def enable_relay():
+    global RELAY_STATUS
+
+    if RELAY_STATUS == 0:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)
+        RELAY_STATUS = 1
+        time.sleep(0.3)
+        print '\n Relay enabled'
+
+    write_all()
+
+def disable_relay():
+    global RELAY_STATUS
+
+    if RELAY_STATUS == 1:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.cleanup()
+        RELAY_STATUS = 0
+        time.sleep(0.3)
+        print '\n Relay disabled'
+
+    write_all()
+
 def get_values():
         global BMP_T
         global BMP_P
@@ -71,9 +130,14 @@ def get_values():
         global DHT_H
         global DHT_T
 
+        get_relay_mode()
+        get_air_and_floor()
+        get_hours()
+        get_hours_mode()
+
         DHT_H, DHT_T = Adafruit_DHT.read_retry(sensor_dht, DHT_PIN)
-        BMP_T=sensor_bmp.read_temperature()
-        BMP_P=sensor_bmp.read_pressure() * 0.0075006375541921
+        BMP_T = sensor_bmp.read_temperature()
+        BMP_P = sensor_bmp.read_pressure() * 0.0075006375541921
 
         def temp1():
             global DS_1
@@ -91,76 +155,23 @@ def get_values():
             tempdata2 = thetext2.split("\n")[1].split(" ")[9]
             DS_2 = float(tempdata2[2:])/1000
 
-        t1 = threading.Thread(target=temp1)
+        t1 = threading.Thread(target = temp1)
         t1.daemon = True
         t1.start()
 
-        t2 = threading.Thread(target=temp2)
+        t2 = threading.Thread(target = temp2)
         t2.daemon = True
         t2.start()
 
         while DS_1 == 0 or DS_2 == 0:
             time.sleep(0.1)
 
-def get_relay_status():
-    global RELAY_STATUS
-    f = open(relay_switch_path, 'r')
-    RELAY_STATUS = f.read()
-    if str(RELAY_STATUS) == "":
-        print "\n RELAY MODE STATUS is empty, using AUTO"
-        RELAY_STATUS = 'auto'
-
-def get_floor_delta():
-    global FLOOR_DELTA
-    f = open(floor_delta_path, 'r')
-    FLOOR_DELTA = f.read()
-    if str(FLOOR_DELTA) == '':
-        print '\n FLOOR_DELTA is empty, using stock'
-        FLOOR_DELTA = FLOOR_DELTA_STOCK
-
-def get_air_temp():
-    global AIR_TEMP
-    f = open(air_temp_path, 'r')
-    AIR_TEMP = f.read()
-    if str(AIR_TEMP) == '':
-        print '\n AIR_TEMP is empty, using stock'
-        AIR_TEMP = AIR_TEMP_STOCK
-
-def get_hours():
-    global HOURS
-    f = open(hours_path, 'r')
-    HOURS = f.read()
-    if str(HOURS) == '':
-        print '\n HOURS is empty, using stock'
-        HOURS = HOURS_STOCK
-
-def enable_relay():
-    global GPIO_STAT
-    if GPIO_STAT == 0:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)
-        GPIO_STAT = 1
-        time.sleep(0.3)
-        print '\n Relay enabled'
-
-def disable_relay():
-    global GPIO_STAT
-    if GPIO_STAT == 1:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.cleanup()
-        GPIO_STAT = 0
-        time.sleep(0.3)
-        print '\n Relay disabled'
-
 while True:
     get_values()
-    get_relay_status()
-    get_air_temp()
-    get_floor_delta()
-    get_hours()
 
     DS_DELTA = DS_2 - DS_1
     TEMP_AVR = (BMP_T + DHT_T) / 2
+
     CURR_HOUR = int(time.strftime("%-H")) + 3
 
     # Parsing hours
@@ -173,18 +184,21 @@ while True:
 
     print ("\n DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA " + str(FLOOR_DELTA)
             + "\n TEMP AVR " + str(TEMP_AVR) + " vs AIR TEMP " + str(AIR_TEMP)
-            + "\n RELAY MODE STATUS " + str(RELAY_STATUS)
-            + " \n RELAY " + str(GPIO_STAT)
+            + "\n RELAY MODE STATUS " + str(RELAY_MODE)
+            + " \n RELAY " + str(RELAY_STATUS)
             + "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
             + "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE))
 
-    if str(RELAY_STATUS) == 'on':
+    if str(RELAY_MODE) == 'on':
         enable_relay()
-    elif str(RELAY_STATUS) == 'off':
+    elif str(RELAY_MODE) == 'off':
         disable_relay()
-    elif str(RELAY_STATUS) == 'auto':
-        if float(TEMP_AVR) < float(AIR_TEMP) and float(DS_DELTA) > float(FLOOR_DELTA) and HOURS_RELAY_ENABLE == 1:
-            enable_relay()
+    elif str(RELAY_MODE) == 'auto':
+        if float(TEMP_AVR) < float(AIR_TEMP) and float(DS_DELTA) > float(FLOOR_DELTA):
+            if (str(HOURS_MODE) == 'on' and HOURS_RELAY_ENABLE == 1) or str(HOURS_MODE) == 'off':
+                enable_relay()
+            else:
+                disable_relay()
         else:
             disable_relay()
-    time.sleep(60)
+    time.sleep(10)
