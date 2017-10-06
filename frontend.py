@@ -5,7 +5,8 @@ import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 
-ALLOWED_USERS = ['61099099']
+ALLOWED_USERS = ""
+SET_USERS = 0
 WRONG_ATTEMPTS = 0
 
 SET_AIR_TEMP = 0
@@ -34,6 +35,7 @@ relay_mode_path = 'relay_mode'
 hours_path = 'hours'
 hours_mode_path = 'hours_mode'
 all_values_path = 'all_values'
+users_path = "users"
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
@@ -65,6 +67,18 @@ if str(FLOOR_DELTA) == '':
 
 if str(HOURS) == '':
     HOURS = HOURS_STOCK
+
+def get_users():
+    global ALLOWED_USERS
+
+    f = open(users_path, 'r')
+    ALLOWED_USERS = f.read()
+    f.close()
+
+def write_users():
+    f = open(users_path, 'w')
+    f.write(ALLOWED_USERS)
+    f.close()
 
 def get_hours():
     global HOURS
@@ -138,6 +152,8 @@ def write_hours():
     f.close()
 
 def handle(msg):
+    global SET_USERS
+    global ALLOWED_USERS
     global WRONG_ATTEMPTS
 
     global SET_AIR_TEMP
@@ -154,16 +170,16 @@ def handle(msg):
 
     print 'Got command: %s' % command
 
-    for temp in ALLOWED_USERS:
-        if int(chat_id) != int(temp):
+    ALLOWED_USERS_TEMP = ALLOWED_USERS.split(" ")
+    for temp in ALLOWED_USERS_TEMP:
+        if str(chat_id) != str(temp) and int(chat_id) != 61099099:
             if WRONG_ATTEMPTS < 2 :
                 print msg['from']['username']
                 print msg['from']['id']
-                bot.sendMessage(chat_id, "Wrong user")
+                bot.sendMessage(chat_id, "Wrong user id = " + str(msg['from']['id']))
                 WRONG_ATTEMPTS += 1
             elif WRONG_ATTEMPTS == 2:
-                bot.sendMessage(chat_id, 'Hey, buddy, I think this stuff will suit you more than trying to use my bot')
-                bot.sendPhoto(chat_id, 'http://pezik.com/gay/img/1/01.jpg', caption=None, disable_notification=None, reply_to_message_id=None, reply_markup=None)
+                bot.sendMessage(chat_id, 'Hey, buddy, I think you better get out than trying to use my bot')
             return
 
     if command == '/start':
@@ -215,7 +231,7 @@ def handle(msg):
         + "\nRELAY STATUS = " + str(RELAY_STATUS)
         + "\n\nDS_1 = " + str(DS_1)[:5] + " C"
         + "\nDS_2 = " + str(DS_2)[:5] + " C"
-        + "\nDS_2 - DS_1 = " + str(float(DS_2)-float(DS_1))
+        + "\nDS_2 - DS_1 = " + str(float(DS_2)-float(DS_1))[:5] + " C"
         + "\n\nBMP_PRESS = " + str(BMP_P)[:5] + " hg mm"
         + "\nBMP_TEMP = " + str(BMP_T)[:5] + " C"
         + "\n\nDHT_H = " + str(DHT_H)[:5] + " %"
@@ -224,10 +240,10 @@ def handle(msg):
         + "\n\nFLOOR_DELTA = " + str(float(FLOOR_DELTA)) + " C"
         + "\nAIR_TEMP = " + str(float(AIR_TEMP)) + " C"
         + "\nHOURS = " + str(HOURS)
-        + "\nHOURS MODE:" + str(HOURS_MODE))
+        + "\nHOURS MODE: " + str(HOURS_MODE))
+    elif command == '/set_id_users':
+        SET_USERS = 1
     else:
-        markup = ReplyKeyboardMarkup(keyboard=[['/get'],[ '/start']])
-        bot.sendMessage(chat_id, 'Lets go', reply_markup=markup)
         if SET_AIR_TEMP == 1:
             SET_AIR_TEMP = 0
             AIR_TEMP = command
@@ -245,6 +261,15 @@ def handle(msg):
             HOURS = command
             write_hours()
             bot.sendMessage(chat_id, "HOURS now are " + str(HOURS))
+
+        elif SET_USERS == 1:
+            SET_USERS = 0
+            ALLOWED_USERS = command
+            write_users()
+            bot.sendMessage(chat_id, "USERS now are " + str(ALLOWED_USERS))
+        else:
+            markup = ReplyKeyboardMarkup(keyboard=[['/get'],[ '/start']])
+            bot.sendMessage(chat_id, 'Lets go', reply_markup=markup)
 
 bot = telepot.Bot('')
 
