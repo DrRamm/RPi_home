@@ -6,7 +6,10 @@ import datetime
 import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
-
+import subprocess
+from pocketsphinx.pocketsphinx import *
+from sphinxbase.sphinxbase import *
+from os import environ, path
 
 ALLOWED_USERS = ""
 SET_USERS = 0
@@ -19,6 +22,8 @@ FLOOR_DELTA_STOCK = 1.5
 
 HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
 SET_HOURS = 0
+
+VOICE = 0
 
 #values
 BMP_T = 0
@@ -168,8 +173,16 @@ def handle(msg):
     global HOURS
     global SET_HOURS
 
+    global VOICE
+
     chat_id = msg['chat']['id']
-    command = msg['text']
+
+    command = ""
+    try:
+        command = msg['text']
+        VOICE = 0
+    except:
+        VOICE = 1
 
     print 'Got command: %s' % command
 
@@ -185,7 +198,36 @@ def handle(msg):
                 bot.sendMessage(chat_id, 'Эй, дружище, займись чем-нибудь другим')
             return
 
-    if command == '/start':
+    if VOICE == 1:
+        bot.download_file(msg['voice']['file_id'], 'voice.ogg')
+        exe = '''ffmpeg -y -i voice.ogg voice.wav'''
+        p = subprocess.Popen(["%s" % exe], shell=True, stdout=subprocess.PIPE)
+        time.sleep(0.5)
+        MODELDIR='/usr/local/share/pocketsphinx/model/en-us/en-us'
+        DICDIR = './'
+        config = Decoder.default_config()
+        config.set_string('-hmm', MODELDIR)
+        config.set_string('-lm', path.join(DICDIR, '5539.lm'))
+        config.set_string('-dict', path.join(DICDIR, '5539.dic'))
+        decoder = Decoder(config)
+        in_speech_bf = False
+        stream = open('voice.wav', 'rb')
+        decoder.start_utt()
+        while True:
+            buf = stream.read(1024)
+            if buf:
+                decoder.process_raw(buf, False, False)
+                if decoder.get_in_speech() != in_speech_bf:
+                    in_speech_bf = decoder.get_in_speech()
+                    if not in_speech_bf:
+                        decoder.end_utt()
+                        bot.sendMessage(chat_id, str(decoder.hyp().hypstr))
+                        decoder.start_utt()
+            else:
+                break
+        decoder.end_utt()
+
+    elif command == '/start':
         markup = ReplyKeyboardMarkup(keyboard=[['/get', '/start']])
         bot.sendMessage(chat_id,
         "  /get - получение информации: с датчиков, реле, по часам"
