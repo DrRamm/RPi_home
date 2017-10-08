@@ -190,7 +190,6 @@ def handle(msg):
     for temp in ALLOWED_USERS_TEMP:
         if str(chat_id) != str(temp) and int(chat_id) != 61099099:
             if WRONG_ATTEMPTS < 2 :
-                print msg['from']['username']
                 print msg['from']['id']
                 bot.sendMessage(chat_id, "Неверный id " + str(msg['from']['id']))
                 WRONG_ATTEMPTS += 1
