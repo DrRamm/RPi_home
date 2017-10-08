@@ -280,9 +280,9 @@ def handle(msg):
         + "\nТемпература 1 = " + str(BMP_T)[:5] + " C"
         + "\n\nВлажноcть = " + str(DHT_H)[:5] + " %"
         + "\nТемпература 2 = " + str(DHT_T)[:5] + " C"
-        + "\n\nСредняя температура воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
-        + "\n\nДельта пола для срабатывания = " + str(float(FLOOR_DELTA)) + " C"
-        + "\nЖелаемая температура воздуха = " + str(float(AIR_TEMP)) + " C"
+        + "\n\nСредняя темп. воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
+        + "\n\nДельта пола установлена = " + str(float(FLOOR_DELTA)) + " C"
+        + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
         + "\n\nЧасы = " + str(HOURS)
         + "\nРежим работы по часам (on|off): " + str(HOURS_MODE))
     elif command == '/set_id_users':
