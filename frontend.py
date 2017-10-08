@@ -258,7 +258,7 @@ def handle(msg):
     elif command == '/set_default_hours':
         HOURS = HOURS_STOCK
         write_hours()
-        bot.sendMessage(chat_id, "Часы работы реле: " + str(HOURS))
+        bot.sendMessage(chat_id, "Часы работы реле по умолчанию: " + str(HOURS))
     elif command == '/relay_on':
         bot.sendMessage(chat_id, "Принудительное ВКЛючение реле")
         enable_relay()
@@ -285,7 +285,7 @@ def handle(msg):
         + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
         + "\n\nЧасы = " + str(HOURS)
         + "\nРежим работы по часам (on|off): " + str(HOURS_MODE))
-    elif command == '/set_id_users':
+    elif command == '/set_users_id':
         SET_USERS = 1
         bot.sendMessage(chat_id, "Айдишники через пробел")
     else:
