@@ -1,0 +1,1 @@
+*/7 * * * * killall python ; /usr/bin/python /home/pi/tg.py >> /home/pi/telega.txt 2>> /home/pi/errors_tg.txt ; /usr/bin/python /home/pi/server.py >> /home/pi/servak.txt 2>> /home/pi/errors_serv.txt
