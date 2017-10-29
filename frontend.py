@@ -19,9 +19,13 @@ SET_AIR_TEMP = 0
 SET_FLOOR_DELTA = 0
 AIR_TEMP_STOCK = 23
 FLOOR_DELTA_STOCK = 1.5
+FLOOR_DELTA=0
+AIR_TEMP=0
 
 HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
+HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
 SET_HOURS = 0
+SET_WEND_HOURS = 0
 
 VOICE = 0
 
@@ -38,43 +42,17 @@ RELAY_STATUS = 0
 RELAY_MODE = ""
 HOURS_MODE = ""
 
-air_and_floor_path = 'deltas'
-relay_mode_path = 'relay_mode'
-hours_path = 'hours'
-hours_mode_path = 'hours_mode'
-all_values_path = 'all_values'
-users_path = "users"
+HOME_PATH = '/home/pi/'
+air_and_floor_path = HOME_PATH + 'deltas'
+relay_mode_path = HOME_PATH + 'relay_mode'
+hours_path = HOME_PATH + 'hours'
+hours_wend_path = HOME_PATH + 'hours_wend'
+hours_mode_path = HOME_PATH + 'hours_mode'
+all_values_path = HOME_PATH + 'all_values'
+users_path = HOME_PATH + "users"
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
-
-try:
-    air_and_floor = open(air_and_floor_path)
-except:
-    air_and_floor = open (air_and_floor_path, 'w')
-    air_and_floor.write(str(AIR_TEMP_STOCK) + " " + str(FLOOR_DELTA_STOCK))
-try:
-    hours = open(hours_path)
-except:
-    hours = open(hours_path, 'w')
-    hours.write(str(HOURS_STOCK))
-
-temp_stuff=air_and_floor.read()
-HOURS = hours.read()
-
-hours.close()
-air_and_floor.close()
-
-FLOOR_DELTA,AIR_TEMP = temp_stuff.split(" ")
-
-if str(AIR_TEMP) == "":
-    AIR_TEMP = AIR_TEMP_STOCK
-
-if str(FLOOR_DELTA) == '':
-    FLOOR_DELTA = FLOOR_DELTA_STOCK
-
-if str(HOURS) == '':
-    HOURS = HOURS_STOCK
 
 def get_users():
     global ALLOWED_USERS
@@ -88,11 +66,24 @@ def write_users():
     f.write(ALLOWED_USERS)
     f.close()
 
+def get_deltas():
+    global FLOOR_DELTA
+    global AIR_TEMP
+    f = open(air_and_floor_path, 'r')
+    temp_stuff = f.read()
+    FLOOR_DELTA,AIR_TEMP = temp_stuff.split(" ")
+    f.close()
+
 def get_hours():
     global HOURS
+    global HOURS_WEND
 
     f = open(hours_path, 'r')
     HOURS = f.read()
+    f.close()
+
+    f = open(hours_wend_path, 'r')
+    HOURS_WEND = f.read()
     f.close()
 
 def get_modes():
@@ -118,6 +109,7 @@ def get_values():
 
     get_modes()
     get_hours()
+    get_deltas()
 
     f = open(all_values_path, 'r')
     temp_stuff = f.read()
@@ -159,6 +151,11 @@ def write_hours():
     f.write(str(HOURS))
     f.close()
 
+def write_wend_hours():
+    f = open(hours_wend_path, 'w')
+    f.write(str(HOURS_WEND))
+    f.close()
+
 def handle(msg):
     global SET_USERS
     global ALLOWED_USERS
@@ -171,7 +168,9 @@ def handle(msg):
     global FLOOR_DELTA
 
     global HOURS
+    global HOURS_WEND
     global SET_HOURS
+    global SET_WEND_HOURS
 
     global VOICE
 
@@ -236,6 +235,7 @@ def handle(msg):
         + "\n\n /set_air_temp - Установка желаемой температуры воздуха"
         + "\n\n /set_floor_delta - Установка дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
         + "\n\n /set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
+        + "\n\n /set_weekend_hours - Установка часов включения реле для выходного дня. Работает только когда реле в АВТОматическом режиме"
         + "\n\n /set_hours_on - ВКЛючение режима работы по часам"
         + "\n\n /set_hours_off - ВЫКЛючение режима работы по часам"
         + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
@@ -249,6 +249,9 @@ def handle(msg):
     elif command == '/set_hours':
         SET_HOURS = 1
         bot.sendMessage(chat_id, "Введите значения, разделенные пробелом")
+    elif command == '/set_weekend_hours':
+        SET_WEND_HOURS = 1
+        bot.sendMessage(chat_id, "Введите значения, разделенные пробелом")
     elif command == '/set_hours_on':
         set_hours_on()
         bot.sendMessage(chat_id, "Режима работы по часам ВКЛючен")
@@ -257,8 +260,11 @@ def handle(msg):
         bot.sendMessage(chat_id, "Режим работы по часам ВЫКЛючен")
     elif command == '/set_default_hours':
         HOURS = HOURS_STOCK
+        HOURS_WEND = HOURS_WEND_STOCK
         write_hours()
-        bot.sendMessage(chat_id, "Часы работы реле по умолчанию: " + str(HOURS))
+        write_wend_hours()
+        bot.sendMessage(chat_id, "Часы работы реле в будний: " + str(HOURS))
+        bot.sendMessage(chat_id, "Часы работы реле в выходной: " + str(HOURS_WEND))
     elif command == '/relay_on':
         bot.sendMessage(chat_id, "Принудительное ВКЛючение реле")
         enable_relay()
@@ -283,9 +289,10 @@ def handle(msg):
         + "\n\nСредняя темп. воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
         + "\n\nДельта пола установлена = " + str(float(FLOOR_DELTA)) + " C"
         + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
-        + "\n\nЧасы = " + str(HOURS)
+        + "\n\nЧасы будние дни = " + str(HOURS)
+        + "\n\nЧасы выходные= " + str(HOURS_WEND)
         + "\nРежим работы по часам (on|off): " + str(HOURS_MODE))
-    elif command == '/set_users_id':
+    elif command == '/set_id_users':
         SET_USERS = 1
         bot.sendMessage(chat_id, "Айдишники через пробел")
     else:
@@ -306,6 +313,12 @@ def handle(msg):
             HOURS = command
             write_hours()
             bot.sendMessage(chat_id, "Часы установлены: " + str(HOURS))
+
+        elif SET_WEND_HOURS == 1:
+            SET_WEND_HOURS = 0
+            HOURS_WEND = command
+            write_wend_hours()
+            bot.sendMessage(chat_id, "Часы для выходных установлены: " + str(HOURS_WEND))
 
         elif SET_USERS == 1:
             SET_USERS = 0

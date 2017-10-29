@@ -1,10 +1,12 @@
+#!/usr/bin/env python
 import time
 import random
 import datetime
-import RPi.GPIO as GPIO   # GPIO
-import Adafruit_DHT  # DHT
-import Adafruit_BMP.BMP085 as BMP085 # BMP
 import threading # DS
+import Adafruit_DHT  # DHT
+import RPi.GPIO as GPIO   # GPIO
+import Adafruit_BMP.BMP085 as BMP085 # BMP
+from datetime import  date
 
 DHT_PIN = 17
 
@@ -16,13 +18,16 @@ AIR_TEMP_STOCK = 23
 FLOOR_DELTA_STOCK = 1.5
 
 HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
+HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
 HOURS_MODE = ''
 
-air_and_floor_path = 'deltas'
-relay_mode_path = 'relay_mode'
-hours_path = 'hours'
-hours_mode_path = 'hours_mode'
-all_values_path = 'all_values'
+HOME_PATH = "/home/pi/"
+air_and_floor_path = HOME_PATH + 'deltas'
+relay_mode_path = HOME_PATH + 'relay_mode'
+hours_path = HOME_PATH + 'hours'
+hours_wend_path = HOME_PATH + 'hours_wend'
+hours_mode_path = HOME_PATH + 'hours_mode'
+all_values_path = HOME_PATH + 'all_values'
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
@@ -57,6 +62,7 @@ def get_relay_mode():
 
     f = open(relay_mode_path, 'r')
     RELAY_MODE = f.read()
+    f.close()
 
     if str(RELAY_MODE) == "":
         print "\n RELAY MODE is empty, using AUTO"
@@ -68,6 +74,7 @@ def get_air_and_floor():
 
     f = open(air_and_floor_path, 'r')
     temp_stuff = f.read()
+    f.close()
     FLOOR_DELTA, AIR_TEMP = temp_stuff.split(" ")
 
     if str(AIR_TEMP) == '':
@@ -80,19 +87,30 @@ def get_air_and_floor():
 
 def get_hours():
     global HOURS
+    global HOURS_WEND
 
     f = open(hours_path, 'r')
     HOURS = f.read()
+    f.close()
+
+    f = open(hours_wend_path, 'r')
+    HOURS_WEND = f.read()
+    f.close()
 
     if str(HOURS) == '':
         print '\n HOURS is empty, using stock'
         HOURS = HOURS_STOCK
+
+    if str(HOURS_WEND) == '':
+        print '\n HOURS WEND is empty, using stock'
+        HOURS_WEND = HOURS_WEND_STOCK
 
 def get_hours_mode():
     global HOURS_MODE
 
     f = open(hours_mode_path, 'r')
     HOURS_MODE = f.read()
+    f.close()
 
     if str(HOURS_MODE) == '':
         print '\n HOURS_MODE is empty,  enabled by default'
@@ -173,10 +191,16 @@ while True:
     TEMP_AVR = (BMP_T + DHT_T) / 2
 
     CURR_HOUR = int(time.strftime("%-H")) + 3
+    NOW_DATE = datetime.date.today()
 
     # Parsing hours
     HOURS_RELAY_ENABLE = 0
-    HOURS_LIST = HOURS.split(" ")
+
+    if NOW_DATE.isoweekday() == 6 or NOW_DATE.isoweekday() == 7:
+        HOURS_LIST = HOURS_WEND.split(" ")
+    else:
+        HOURS_LIST = HOURS.split(" ")
+
     for temp in HOURS_LIST:
         if int(temp) == int(CURR_HOUR):
             HOURS_RELAY_ENABLE = 1
@@ -187,7 +211,8 @@ while True:
             + "\n RELAY MODE STATUS " + str(RELAY_MODE)
             + " \n RELAY " + str(RELAY_STATUS)
             + "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
-            + "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE))
+            + "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE)
+            + "\n NOW DATE " + str(NOW_DATE.isoweekday()))
 
     if str(RELAY_MODE) == 'on':
         enable_relay()
