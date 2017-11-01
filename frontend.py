@@ -16,11 +16,14 @@ SET_USERS = 0
 WRONG_ATTEMPTS = 0
 
 SET_AIR_TEMP = 0
-SET_FLOOR_DELTA = 0
+SET_FLOOR_DELTA_MIN = 0
+SET_FLOOR_DELTA_MAX = 0
 AIR_TEMP_STOCK = 23
-FLOOR_DELTA_STOCK = 1.5
-FLOOR_DELTA=0
-AIR_TEMP=0
+FLOOR_DELTA_MIN_STOCK = 1.5
+FLOOR_DELTA_MIN = 0
+FLOOR_DELTA_MAX_STOCK = 11
+FLOOR_DELTA_MAX = 0
+AIR_TEMP = 0
 
 HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
 HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
@@ -67,11 +70,12 @@ def write_users():
     f.close()
 
 def get_deltas():
-    global FLOOR_DELTA
+    global FLOOR_DELTA_MIN
+    global FLOOR_DELTA_MAX
     global AIR_TEMP
     f = open(air_and_floor_path, 'r')
     temp_stuff = f.read()
-    FLOOR_DELTA,AIR_TEMP = temp_stuff.split(" ")
+    FLOOR_DELTA_MIN,AIR_TEMP, FLOOR_DELTA_MAX = temp_stuff.split(" ")
     f.close()
 
 def get_hours():
@@ -143,7 +147,7 @@ def set_hours_on():
 
 def write_deltas():
     f = open(air_and_floor_path, 'w')
-    f.write(str(FLOOR_DELTA) + " " + str(AIR_TEMP))
+    f.write(str(FLOOR_DELTA_MIN) + " " + str(AIR_TEMP) + " " + str(FLOOR_DELTA_MAX))
     f.close()
 
 def write_hours():
@@ -164,8 +168,10 @@ def handle(msg):
     global SET_AIR_TEMP
     global AIR_TEMP
 
-    global SET_FLOOR_DELTA
-    global FLOOR_DELTA
+    global SET_FLOOR_DELTA_MIN
+    global FLOOR_DELTA_MIN
+    global SET_FLOOR_DELTA_MAX
+    global FLOOR_DELTA_MAX
 
     global HOURS
     global HOURS_WEND
@@ -233,18 +239,23 @@ def handle(msg):
         + "\n\n /relay_off - Принудительное ВЫКЛючение реле"
         + "\n\n /relay_auto - АВТОматический режим"
         + "\n\n /set_air_temp - Установка желаемой температуры воздуха"
-        + "\n\n /set_floor_delta - Установка дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
+        + "\n\n /set_floor_delta_min - Установка МИНИмальной дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
+        + "\n\n /set_floor_delta_max - Установка МАКСИмальной дельты пола: разницы между подачей и обраткой. Служит для подогрева пола"
         + "\n\n /set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
         + "\n\n /set_weekend_hours - Установка часов включения реле для выходного дня. Работает только когда реле в АВТОматическом режиме"
         + "\n\n /set_hours_on - ВКЛючение режима работы по часам"
         + "\n\n /set_hours_off - ВЫКЛючение режима работы по часам"
         + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
+        + "\n\n/set_id_users"
         )
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
         bot.sendMessage(chat_id, "Введите значение")
-    elif command == '/set_floor_delta':
-        SET_FLOOR_DELTA = 1
+    elif command == '/set_floor_delta_min':
+        SET_FLOOR_DELTA_MIN = 1
+        bot.sendMessage(chat_id, "Введите значение")
+    elif command == '/set_floor_delta_max':
+        SET_FLOOR_DELTA_MAX = 1
         bot.sendMessage(chat_id, "Введите значение")
     elif command == '/set_hours':
         SET_HOURS = 1
@@ -281,17 +292,17 @@ def handle(msg):
         + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
         + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
         + "\nТемпература подачи = " + str(DS_2)[:5] + " C"
-        + "\nТекущая дельта пола = " + str(float(DS_2)-float(DS_1))[:5] + " C"
+        + "\n\nТекущая дельта пола = " + str(float(DS_2)-float(DS_1))[:5] + " C"
+        + "\nМИНИ дельта пола установлена = " + str(float(FLOOR_DELTA_MIN)) + " C"
+        + "\nМАКСИ дельта пола установлена = " + str(float(FLOOR_DELTA_MAX)) + " C"
         + "\n\nДавление = " + str(BMP_P)[:5] + " hg mm"
-        + "\nТемпература 1 = " + str(BMP_T)[:5] + " C"
-        + "\n\nВлажноcть = " + str(DHT_H)[:5] + " %"
-        + "\nТемпература 2 = " + str(DHT_T)[:5] + " C"
+        + "\nВлажноcть = " + str(DHT_H)[:5] + " %"
         + "\n\nСредняя темп. воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
-        + "\n\nДельта пола установлена = " + str(float(FLOOR_DELTA)) + " C"
+
         + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
         + "\n\nЧасы будние дни = " + str(HOURS)
-        + "\n\nЧасы выходные= " + str(HOURS_WEND)
-        + "\nРежим работы по часам (on|off): " + str(HOURS_MODE))
+        + "\nЧасы выходные= " + str(HOURS_WEND)
+        + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
     elif command == '/set_id_users':
         SET_USERS = 1
         bot.sendMessage(chat_id, "Айдишники через пробел")
@@ -302,11 +313,17 @@ def handle(msg):
             write_deltas()
             bot.sendMessage(chat_id, "Желаемая температура возудха: " + str(AIR_TEMP))
 
-        elif SET_FLOOR_DELTA == 1:
-            SET_FLOOR_DELTA = 0
-            FLOOR_DELTA = command
+        elif SET_FLOOR_DELTA_MIN == 1:
+            SET_FLOOR_DELTA_MIN = 0
+            FLOOR_DELTA_MIN = command
             write_deltas()
-            bot.sendMessage(chat_id, "Дельта пола для срабатывания: " + str(FLOOR_DELTA))
+            bot.sendMessage(chat_id, "Минимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MIN))
+            
+        elif SET_FLOOR_DELTA_MAX == 1:
+            SET_FLOOR_DELTA_MAX = 0
+            FLOOR_DELTA_MAX = command
+            write_deltas()
+            bot.sendMessage(chat_id, "Максимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MAX))
 
         elif SET_HOURS == 1:
             SET_HOURS = 0
