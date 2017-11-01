@@ -15,7 +15,8 @@ RELAY_MODE = ""
 RELAY_STATUS = 0
 
 AIR_TEMP_STOCK = 23
-FLOOR_DELTA_STOCK = 1.5
+FLOOR_DELTA_MIN_STOCK = 1.5
+FLOOR_DELTA_MAX_STOCK = 11
 
 HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
 HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
@@ -69,21 +70,26 @@ def get_relay_mode():
         RELAY_MODE = 'auto'
 
 def get_air_and_floor():
-    global FLOOR_DELTA
+    global FLOOR_DELTA_MIN
     global AIR_TEMP
+    global FLOOR_DELTA_MAX
 
     f = open(air_and_floor_path, 'r')
     temp_stuff = f.read()
     f.close()
-    FLOOR_DELTA, AIR_TEMP = temp_stuff.split(" ")
+    FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX = temp_stuff.split(" ")
 
     if str(AIR_TEMP) == '':
         print '\n AIR_TEMP is empty, using stock'
         AIR_TEMP = AIR_TEMP_STOCK
 
-    if str(FLOOR_DELTA) == '':
-        print '\n FLOOR_DELTA is empty, using stock'
-        FLOOR_DELTA = FLOOR_DELTA_STOCK
+    if str(FLOOR_DELTA_MIN) == '':
+        print '\n FLOOR_DELTA_MIN is empty, using stock'
+        FLOOR_DELTA_MIN = FLOOR_DELTA_MIN_STOCK
+
+    if str(FLOOR_DELTA_MAX) == '':
+        print '\n FLOOR_DELTA_MIN MAX is empty, using stock'
+        FLOOR_DELTA_MAX = FLOOR_DELTA_MAX_STOCK
 
 def get_hours():
     global HOURS
@@ -206,24 +212,27 @@ while True:
             HOURS_RELAY_ENABLE = 1
             break
 
-    print ("\n DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA " + str(FLOOR_DELTA)
+    print ("\n FLOOR DELTA MAX " + str(FLOOR_DELTA_MAX) + "vs DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA MAX" + str(FLOOR_DELTA_MAX)
             + "\n TEMP AVR " + str(TEMP_AVR) + " vs AIR TEMP " + str(AIR_TEMP)
             + "\n RELAY MODE STATUS " + str(RELAY_MODE)
-            + " \n RELAY " + str(RELAY_STATUS)
+            + "\n RELAY " + str(RELAY_STATUS)
             + "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
             + "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE)
-            + "\n NOW DATE " + str(NOW_DATE.isoweekday()))
+            + "\n NOW DATE " + str(NOW_DATE.isoweekday()) 
+            + "\n NOW HOUR " + str(CURR_HOUR))
 
     if str(RELAY_MODE) == 'on':
         enable_relay()
     elif str(RELAY_MODE) == 'off':
         disable_relay()
     elif str(RELAY_MODE) == 'auto':
-        if float(TEMP_AVR) < float(AIR_TEMP) and float(DS_DELTA) > float(FLOOR_DELTA):
+        if float(TEMP_AVR) < float(AIR_TEMP) and float(DS_DELTA) > float(FLOOR_DELTA_MIN):
             if (str(HOURS_MODE) == 'on' and HOURS_RELAY_ENABLE == 1) or str(HOURS_MODE) == 'off':
                 enable_relay()
             else:
                 disable_relay()
+        elif float(DS_DELTA) > float(FLOOR_DELTA_MAX) and HOURS_RELAY_ENABLE == 1:
+            enable_relay()
         else:
             disable_relay()
     time.sleep(10)
