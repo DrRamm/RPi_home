@@ -9,6 +9,7 @@ from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 import subprocess
 from os import environ, path
 import speech_recognition as sr
+import pymorphy2
 
 ALLOWED_USERS = ""
 SET_USERS = 0
@@ -159,10 +160,28 @@ def write_wend_hours():
     f.write(str(HOURS_WEND))
     f.close()
 
-def make_good(chat_id,data):
-    data = data.encode('utf-8')
-    if (data == 'Привет'):
-        bot.sendMessage(chat_id, 'wew')
+def make_good(chat_id, data):
+    morph = pymorphy2.MorphAnalyzer()
+    
+    data = data.lower()
+    
+    print (data)
+    
+    data = data.split()
+
+    normalized_data = ""
+    
+    for temp in data:
+        temp_morph = morph.parse(temp)[0]
+        temp_morph = temp_morph.normal_form
+        normalized_data += " " + temp_morph
+         
+    normalized_data = normalized_data.split(" ")
+    for temp in normalized_data:
+        if (temp == u'привет'):
+            bot.sendMessage(chat_id, 'wew')
+        elif (temp == u'бот'):
+            bot.sendMessage(chat_id, u'Сам бот')
 
 
 def handle(msg):
@@ -212,12 +231,13 @@ def handle(msg):
         exe = '''ffmpeg -y -i voice.ogg voice.wav'''
         p = subprocess.Popen(["%s" % exe], shell=True, stdout=subprocess.PIPE)
         r = sr.Recognizer()
-        time.sleep (2)
+        time.sleep(2)
         with sr.AudioFile("voice.wav") as source:
                 audio = r.record(source)
         try:
             recognized_text = r.recognize_google(audio, language="ru-RU")
-            bot.sendMessage(chat_id, 'Вы сказали: ' + recognized_text.encode('utf-8'))
+            #recognized_text = recognized_text.encode('utf8')
+            bot.sendMessage(chat_id, 'Вы сказали: ' + recognized_text.encode('utf8'))
             make_good(chat_id, recognized_text)
         except sr.UnknownValueError:
             bot.sendMessage(chat_id, "Google Speech Recognition could not understand audio")
