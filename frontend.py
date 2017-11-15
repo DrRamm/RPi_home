@@ -81,13 +81,13 @@ string_start = ("  /get - получение информации: с датчи
         + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
         + "\n\n/set_id_users")
 
-def write_file(file, value):
-    f = open(file, 'w')
-    f.write(str(value))
+def write_file(file_name, desired_value):
+    f = open(file_name, 'w')
+    f.write(str(desired_value))
     f.close()
     
-def read_file(file):
-    f = open(file, 'r')
+def read_file(file_name):
+    f = open(file_name, 'r')
     temp = f.read()
     f.close()
     return temp
