@@ -81,50 +81,46 @@ string_start = ("  /get - получение информации: с датчи
         + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
         + "\n\n/set_id_users")
 
+def write_file(file, value):
+    f = open(file, 'w')
+    f.write(str(value))
+    f.close()
+    
+def read_file(file):
+    f = open(file, 'r')
+    temp = f.read()
+    f.close()
+    return temp
+
 def get_users():
     global ALLOWED_USERS
-
-    f = open(users_path, 'r')
-    ALLOWED_USERS = f.read()
-    f.close()
+    ALLOWED_USERS = read_file(users_path)
 
 def write_users():
-    f = open(users_path, 'w')
-    f.write(ALLOWED_USERS)
-    f.close()
+    write_file(users_path, ALLOWED_USERS)
 
 def get_deltas():
     global FLOOR_DELTA_MIN
     global FLOOR_DELTA_MAX
     global AIR_TEMP
-    f = open(air_and_floor_path, 'r')
-    temp_stuff = f.read()
+
+    temp_stuff = read_file(air_and_floor_path)
     FLOOR_DELTA_MIN,AIR_TEMP, FLOOR_DELTA_MAX = temp_stuff.split(" ")
-    f.close()
 
 def get_hours():
     global HOURS
     global HOURS_WEND
 
-    f = open(hours_path, 'r')
-    HOURS = f.read()
-    f.close()
-
-    f = open(hours_wend_path, 'r')
-    HOURS_WEND = f.read()
-    f.close()
+    HOURS = read_file(hours_path)
+    HOURS_WEND = read_file(hours_wend_path)
 
 def get_modes():
     global RELAY_MODE
     global HOURS_MODE
 
-    f = open(relay_mode_path, 'r')
-    RELAY_MODE = f.read()
-    f.close()
+    RELAY_MODE = read_file(relay_mode_path)
+    HOURS_MODE = read_file(hours_mode_path)
 
-    f = open(hours_mode_path, 'r')
-    HOURS_MODE = f.read()
-    f.close()
 
 def get_values():
     global BMP_T
@@ -139,10 +135,8 @@ def get_values():
     get_hours()
     get_deltas()
 
-    f = open(all_values_path, 'r')
-    temp_stuff = f.read()
+    temp_stuff = read_file(all_values_path)
     DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = temp_stuff.split(" ")
-    f.close()
     
     bot.sendMessage(chat_id, "Режим реле (on|off|auto): " + str(RELAY_MODE)
         + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
@@ -161,53 +155,37 @@ def get_values():
         + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
 
 def enable_relay():
-    f = open(relay_mode_path, 'w')
-    f.write('on')
-    f.close()
+    write_file(relay_mode_path, 'on')
     bot.sendMessage(chat_id, "Принудительное ВКЛючение реле")
 
 def disable_relay():
-    f = open(relay_mode_path, 'w')
-    f.write('off')
-    f.close()
+    write_file(relay_mode_path, 'off')
     bot.sendMessage(chat_id, "Принудительное ВЫКЛючение реле")
 
 def auto_relay():
-    f = open(relay_mode_path, 'w')
-    f.write('auto')
-    f.close()
+    write_file(relay_mode_path, 'auto')
     bot.sendMessage(chat_id, "Реле в АВТОматическом режиме")
 
 def set_hours_off():
-    f = open(hours_mode_path, 'w')
-    f.write('off')
-    f.close()
+    write_file(hours_mode_path, 'off')    
     bot.sendMessage(chat_id, "Режим работы по часам ВЫКЛючен")
 
 def set_hours_on():
-    f = open(hours_mode_path, 'w')
-    f.write('on')
-    f.close()
+    write_file(hours_mode_path, 'on')
     bot.sendMessage(chat_id, "Режима работы по часам ВКЛючен")
 
 def write_deltas():
-    f = open(air_and_floor_path, 'w')
-    f.write(str(FLOOR_DELTA_MIN) + " " + str(AIR_TEMP) + " " + str(FLOOR_DELTA_MAX))
-    f.close()
+    write_file(air_and_floor_path, str(FLOOR_DELTA_MIN) + " " + str(AIR_TEMP) + " " + str(FLOOR_DELTA_MAX))
     bot.sendMessage(chat_id, "Максимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MAX)
                    + "\nМинимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MIN)
                    + "\nЖелаемая температура возудха: " + str(AIR_TEMP))
 
 def write_hours():
-    f = open(hours_path, 'w')
-    f.write(str(HOURS))
-    f.close()
+    write_file(hours_path, HOURS)
     bot.sendMessage(chat_id, "Часы работы реле в будние: " + str(HOURS))
 
 def write_wend_hours():
-    f = open(hours_wend_path, 'w')
-    f.write(str(HOURS_WEND))
-    f.close()
+    write_file(hours_wend_path, HOURS_WEND)
     bot.sendMessage(chat_id, "Часы работы реле в выходные: " + str(HOURS_WEND))
 
 def normalization(norm_string):
