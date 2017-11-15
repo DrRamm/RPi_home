@@ -18,6 +18,10 @@ WRONG_ATTEMPTS = 0
 is_initiated = 0
 hi_words = ""
 show_words = ""
+enable_words = ""
+disable_words = ""
+auto_words = ""
+relay_words = ""
 
 SET_AIR_TEMP = 0
 SET_FLOOR_DELTA_MIN = 0
@@ -210,12 +214,18 @@ def normalization(norm_string):
         temp_morph = morph.parse(temp)[0]
         temp_morph = temp_morph.normal_form        
         temp_string += temp_morph + " "
-
+    
+    print temp_string
     return temp_string.split(" ")
 
 def initial_strings():
     global hi_words
     global show_words
+    global enable_words
+    global disable_words
+    global auto_words
+    global relay_words
+
     global is_initiated
     
     if (is_initiated == 1):
@@ -226,29 +236,74 @@ def initial_strings():
 
     show_words = 'Покажи Состояние Статус Текущие Параметры Отобрази Запили Информация Инфа' 
     show_words = normalization(show_words)
+    
+    enable_words = 'Включи Вруби Зафигачь' 
+    enable_words = normalization(enable_words)
+    
+    disable_words = 'Выключи Выруби Отключи Отруби' 
+    disable_words = normalization(disable_words)
+    
+    auto_words = 'Авто Автоматический Автомат Само' 
+    auto_words = normalization(auto_words)
+    
+    relay_words = 'Пол Реле Релюху Этаж Отопление' 
+    relay_words = normalization(relay_words)
    
     is_initiated = 1
     
 def make_good(chat_id, data):
     
     initial_strings()
+    
+    enable_stuff = 4
+    is_word_relay = 0
 
     normalized_data = normalization(data.encode('utf-8'))   
     
-    for temp in normalized_data:
-        print temp
-        for temp_hi_words in hi_words:
-            print temp_hi_words
+    for temp in normalized_data: # Parse data
+
+        for temp_hi_words in hi_words: # Hi
             if (temp == temp_hi_words):                
                 bot.sendMessage(chat_id, u'Привет, вот что я могу:')
                 bot.sendMessage(chat_id, string_start)
                 return
                 
-        for temp_show_words in show_words:
-            print temp_show_words
+        for temp_show_words in show_words: # Show
             if (temp == temp_show_words):
                 bot.sendMessage(chat_id, string_get())                   
                 return
+            
+        for temp_disable_words in disable_words: # Disable
+            if (temp == temp_disable_words):
+                enable_stuff = 0                   
+                return
+            
+        for temp_enable_words in enable_words: # Enable
+            if (temp == temp_enable_words):
+                enable_stuff = 1                   
+                return
+            
+        for temp_auto_words in auto_words: # Auto
+            if (temp == temp_auto_words):
+                enable_stuff = 3                   
+                return
+            
+        for temp_relay_words in relay_words: # relay
+            if (temp == temp_relay_words):
+                is_word_relay = 1                   
+                return
+    
+    # Let's do smtng
+    if (is_word_relay == 1):
+        if (enable_stuff == 0):
+            disable_relay()
+        elif (enable_stuff == 1):
+            enable_relay()
+        elif (enable_stuff == 3):
+            auto_relay()
+        else:
+            bot.sendMessage(chat_id, 'Не совсем понял про реле')
+        
 
 def handle(msg):
     global SET_USERS
