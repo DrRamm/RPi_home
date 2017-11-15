@@ -7,9 +7,9 @@ import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 import subprocess
-from pocketsphinx.pocketsphinx import *
-from sphinxbase.sphinxbase import *
 from os import environ, path
+import speech_recognition as sr
+import pymorphy2
 
 ALLOWED_USERS = ""
 SET_USERS = 0
@@ -56,6 +56,20 @@ users_path = HOME_PATH + "users"
 
 ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
 ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
+
+string_start = ("  /get - получение информации: с датчиков, реле, по часам"
+        + "\n\n /relay_on - Принудительное ВКЛючение реле"
+        + "\n\n /relay_off - Принудительное ВЫКЛючение реле"
+        + "\n\n /relay_auto - АВТОматический режим"
+        + "\n\n /set_air_temp - Установка желаемой температуры воздуха"
+        + "\n\n /set_floor_delta_min - Установка МИНИмальной дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
+        + "\n\n /set_floor_delta_max - Установка МАКСИмальной дельты пола: разницы между подачей и обраткой. Служит для подогрева пола"
+        + "\n\n /set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
+        + "\n\n /set_weekend_hours - Установка часов включения реле для выходного дня. Работает только когда реле в АВТОматическом режиме"
+        + "\n\n /set_hours_on - ВКЛючение режима работы по часам"
+        + "\n\n /set_hours_off - ВЫКЛючение режима работы по часам"
+        + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
+        + "\n\n/set_id_users")
 
 def get_users():
     global ALLOWED_USERS
@@ -160,6 +174,65 @@ def write_wend_hours():
     f.write(str(HOURS_WEND))
     f.close()
 
+def string_get():
+    get_values()
+    string_get = ("Режим реле (on|off|auto): " + str(RELAY_MODE)
+        + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
+        + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
+        + "\nТемпература подачи = " + str(DS_2)[:5] + " C"
+        + "\n\nТекущая дельта пола = " + str(float(DS_2)-float(DS_1))[:5] + " C"
+        + "\nМИНИ дельта пола установлена = " + str(float(FLOOR_DELTA_MIN)) + " C"
+        + "\nМАКСИ дельта пола установлена = " + str(float(FLOOR_DELTA_MAX)) + " C"
+        + "\n\nДавление = " + str(BMP_P)[:5] + " hg mm"
+        + "\nВлажноcть = " + str(DHT_H)[:5] + " %"
+        + "\n\nСредняя темп. воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
+
+        + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
+        + "\n\nЧасы будние дни = " + str(HOURS)
+        + "\nЧасы выходные= " + str(HOURS_WEND)
+        + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
+    return string_get()
+
+def make_good(chat_id, data):
+    
+    morph = pymorphy2.MorphAnalyzer()
+    normalized_data = ""
+    
+    data = data.lower()      
+    data = data.split()    
+    
+    for temp in data:
+        temp_morph = morph.parse(temp)[0]
+        temp_morph = temp_morph.normal_form        
+        normalized_data += " " + temp_morph
+        
+    #bot.sendMessage(chat_id, u'Получилось так: ' + normalized_data)
+    
+    hi_words = u'Привет Здаров Здравствовать День Приветулить Хай Хей-хо' 
+    hi_words = hi_words.lower()      
+    hi_words = hi_words.split(" ")
+    
+    show_words = u'Показать Состояние Статус Текущий Параметр Отобразить Запилить Информация Инф' 
+    show_words = show_words.lower()      
+    show_words = show_words.split(" ")
+
+    ################## temp block ################### 
+    for temp in show_words:
+        temp_morph = morph.parse(temp)[0]
+        temp_morph = temp_morph.normal_form        
+        print temp_morph
+    #################################################
+    
+    normalized_data = normalized_data.split(" ")
+    for temp in normalized_data:
+        for temp_hi_words in hi_words:
+            if (temp == temp_hi_words):
+                bot.sendMessage(chat_id, u'Привет, вот что я могу:')
+                bot.sendMessage(chat_id, string_start)
+        for temp_show_words in show_words:
+            if (temp == temp_show_words):
+                bot.sendMessage(chat_id, string_get())
+
 def handle(msg):
     global SET_USERS
     global ALLOWED_USERS
@@ -206,48 +279,22 @@ def handle(msg):
         bot.download_file(msg['voice']['file_id'], 'voice.ogg')
         exe = '''ffmpeg -y -i voice.ogg voice.wav'''
         p = subprocess.Popen(["%s" % exe], shell=True, stdout=subprocess.PIPE)
-        time.sleep(0.5)
-        MODELDIR='/usr/local/share/pocketsphinx/model/en-us/en-us'
-        DICDIR = './'
-        config = Decoder.default_config()
-        config.set_string('-hmm', MODELDIR)
-        config.set_string('-lm', path.join(DICDIR, '5539.lm'))
-        config.set_string('-dict', path.join(DICDIR, '5539.dic'))
-        decoder = Decoder(config)
-        in_speech_bf = False
-        stream = open('voice.wav', 'rb')
-        decoder.start_utt()
-        while True:
-            buf = stream.read(1024)
-            if buf:
-                decoder.process_raw(buf, False, False)
-                if decoder.get_in_speech() != in_speech_bf:
-                    in_speech_bf = decoder.get_in_speech()
-                    if not in_speech_bf:
-                        decoder.end_utt()
-                        bot.sendMessage(chat_id, str(decoder.hyp().hypstr))
-                        decoder.start_utt()
-            else:
-                break
-        decoder.end_utt()
+        r = sr.Recognizer()
+        time.sleep(2)
+        with sr.AudioFile("voice.wav") as source:
+                audio = r.record(source)
+        try:
+            recognized_text = r.recognize_google(audio, language="ru-RU")
+            bot.sendMessage(chat_id, 'Вы сказали: ' + recognized_text.encode('utf8'))
+            make_good(chat_id, recognized_text)
+        except sr.UnknownValueError:
+            bot.sendMessage(chat_id, u"Гугл не понимает тебя")
+        except sr.RequestError as e:
+            bot.sendMessage(chat_id, "Could not request results from Google Speech Recognition service; {0}".format(e))
 
     elif command == '/start':
         markup = ReplyKeyboardMarkup(keyboard=[['/get', '/start']])
-        bot.sendMessage(chat_id,
-        "  /get - получение информации: с датчиков, реле, по часам"
-        + "\n\n /relay_on - Принудительное ВКЛючение реле"
-        + "\n\n /relay_off - Принудительное ВЫКЛючение реле"
-        + "\n\n /relay_auto - АВТОматический режим"
-        + "\n\n /set_air_temp - Установка желаемой температуры воздуха"
-        + "\n\n /set_floor_delta_min - Установка МИНИмальной дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
-        + "\n\n /set_floor_delta_max - Установка МАКСИмальной дельты пола: разницы между подачей и обраткой. Служит для подогрева пола"
-        + "\n\n /set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
-        + "\n\n /set_weekend_hours - Установка часов включения реле для выходного дня. Работает только когда реле в АВТОматическом режиме"
-        + "\n\n /set_hours_on - ВКЛючение режима работы по часам"
-        + "\n\n /set_hours_off - ВЫКЛючение режима работы по часам"
-        + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
-        + "\n\n/set_id_users"
-        )
+        bot.sendMessage(chat_id, string_start)
     elif command == '/set_air_temp':
         SET_AIR_TEMP = 1
         bot.sendMessage(chat_id, "Введите значение")
@@ -286,23 +333,7 @@ def handle(msg):
         bot.sendMessage(chat_id, "Реле в АВТОматическом режиме")
         auto_relay()
     elif command == '/get':
-        get_values()
-        bot.sendMessage(chat_id,
-        "Режим реле (on|off|auto): " + str(RELAY_MODE)
-        + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
-        + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
-        + "\nТемпература подачи = " + str(DS_2)[:5] + " C"
-        + "\n\nТекущая дельта пола = " + str(float(DS_2)-float(DS_1))[:5] + " C"
-        + "\nМИНИ дельта пола установлена = " + str(float(FLOOR_DELTA_MIN)) + " C"
-        + "\nМАКСИ дельта пола установлена = " + str(float(FLOOR_DELTA_MAX)) + " C"
-        + "\n\nДавление = " + str(BMP_P)[:5] + " hg mm"
-        + "\nВлажноcть = " + str(DHT_H)[:5] + " %"
-        + "\n\nСредняя темп. воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
-
-        + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
-        + "\n\nЧасы будние дни = " + str(HOURS)
-        + "\nЧасы выходные= " + str(HOURS_WEND)
-        + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
+        bot.sendMessage(chat_id, string_get())
     elif command == '/set_id_users':
         SET_USERS = 1
         bot.sendMessage(chat_id, "Айдишники через пробел")
