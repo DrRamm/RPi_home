@@ -1,15 +1,12 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import time
-import random
-import datetime
 import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
-import subprocess
-from os import environ, path
 import speech_recognition as sr
 import pymorphy2
+from pydub import AudioSegment
 
 ALLOWED_USERS = ""
 SET_USERS = 0
@@ -217,8 +214,6 @@ def initial_strings():
     if (is_initiated == 1):
         return
 
-    bot.sendMessage(chat_id, u"Первое использование голоса. Придется подождать в два раза дольше")
-
     hi_words = 'Привет Здарова Здравствуй День Приветули Хай Хей-хо'
     hi_words = normalization(hi_words)
 
@@ -238,6 +233,8 @@ def initial_strings():
     relay_words = normalization(relay_words)
 
     is_initiated = 1
+
+    print "Init done"
 
 def make_good(data):
     enable_stuff = 4
@@ -337,12 +334,11 @@ def handle(msg):
             return
 
     if VOICE == 1:
-        bot.download_file(msg['voice']['file_id'], '/home/pi/voice.ogg')
-        exe = '''ffmpeg -y -i /home/pi/voice.ogg /home/pi/voice.wav'''
-        p = subprocess.Popen(["%s" % exe], shell=True, stdout=subprocess.PIPE)
+        bot.download_file(msg['voice']['file_id'], HOME_PATH +  'voice.ogg')
+        ogg_audio = AudioSegment.from_ogg(HOME_PATH + 'voice.ogg')
+        ogg_audio.export(HOME_PATH + "voice.wav", format = "wav")
         r = sr.Recognizer()
-        time.sleep(3)
-        with sr.AudioFile("/home/pi/voice.wav") as source:
+        with sr.AudioFile(HOME_PATH + "voice.wav") as source:
                 audio = r.record(source)
         try:
             recognized_text = r.recognize_google(audio, language="ru-RU")
@@ -424,7 +420,7 @@ def handle(msg):
             bot.sendMessage(chat_id, "Пользователи теперь такие - " + str(ALLOWED_USERS))
         else:
             markup = ReplyKeyboardMarkup(keyboard=[['/get'],[ '/start']])
-            bot.sendMessage(chat_id, 'Горячие кнопки', reply_markup=markup)
+            bot.sendMessage(chat_id, '', reply_markup=markup)
 
 bot = telepot.Bot('')
 
@@ -433,4 +429,4 @@ print 'I am listening ...'
 initial_strings()
 
 while 1:
-    time.sleep(5)
+    time.sleep(4)
