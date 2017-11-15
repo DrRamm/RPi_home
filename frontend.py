@@ -85,7 +85,7 @@ def write_file(file_name, desired_value):
     f = open(file_name, 'w')
     f.write(str(desired_value))
     f.close()
-    
+
 def read_file(file_name):
     f = open(file_name, 'r')
     temp = f.read()
@@ -137,7 +137,7 @@ def get_values():
 
     temp_stuff = read_file(all_values_path)
     DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = temp_stuff.split(" ")
-    
+
     bot.sendMessage(chat_id, "Режим реле (on|off|auto): " + str(RELAY_MODE)
         + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
         + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
@@ -167,7 +167,7 @@ def auto_relay():
     bot.sendMessage(chat_id, "Реле в АВТОматическом режиме")
 
 def set_hours_off():
-    write_file(hours_mode_path, 'off')    
+    write_file(hours_mode_path, 'off')
     bot.sendMessage(chat_id, "Режим работы по часам ВЫКЛючен")
 
 def set_hours_on():
@@ -189,20 +189,19 @@ def write_wend_hours():
     bot.sendMessage(chat_id, "Часы работы реле в выходные: " + str(HOURS_WEND))
 
 def normalization(norm_string):
-    
+
     morph = pymorphy2.MorphAnalyzer()
-    
-    norm_string = norm_string.lower()      
+
+    norm_string = norm_string.lower()
     norm_string = norm_string.split(" ")
     temp_string = ""
 
-    for temp in norm_string:        
-        temp = temp.decode('utf-8') 
+    for temp in norm_string:
+        temp = temp.decode('utf-8')
         temp_morph = morph.parse(temp)[0]
-        temp_morph = temp_morph.normal_form        
+        temp_morph = temp_morph.normal_form
         temp_string += temp_morph + " "
-    
-    print temp_string
+
     return temp_string.split(" ")
 
 def initial_strings():
@@ -214,72 +213,74 @@ def initial_strings():
     global relay_words
 
     global is_initiated
-    
+
     if (is_initiated == 1):
         return
-    
-    hi_words = 'Привет Здарова Здравствуй День Приветули Хай Хей-хо' 
+
+    bot.sendMessage(chat_id, u"Первое использование голоса. Придется подождать в два раза дольше")
+
+    hi_words = 'Привет Здарова Здравствуй День Приветули Хай Хей-хо'
     hi_words = normalization(hi_words)
 
-    show_words = 'Покажи Состояние Статус Текущие Параметры Отобрази Запили Информация Инфа' 
+    show_words = 'Покажи Состояние Статус Текущие Параметры Отобрази Запили Информация Инфа'
     show_words = normalization(show_words)
-    
-    enable_words = 'Включи Вруби Зафигачь' 
+
+    enable_words = 'Включи Вруби Зафигачь'
     enable_words = normalization(enable_words)
-    
-    disable_words = 'Выключи Выруби Отключи Отруби' 
+
+    disable_words = 'Выключи Выруби Отключи Отруби'
     disable_words = normalization(disable_words)
-    
-    auto_words = 'Авто Автоматический Автомат Само' 
+
+    auto_words = 'Авто Автоматически Автоматический Автомат Само'
     auto_words = normalization(auto_words)
-    
-    relay_words = 'Пол Реле Релюху Этаж Отопление' 
+
+    relay_words = 'Пол Реле Релюху Этаж Отопление'
     relay_words = normalization(relay_words)
-   
+
     is_initiated = 1
-    
+
 def make_good(data):
-    
-    initial_strings()
-    
     enable_stuff = 4
     is_word_relay = 0
 
-    normalized_data = normalization(data.encode('utf-8'))   
-    
+    normalized_data = normalization(data.encode('utf-8'))
+
     for temp in normalized_data: # Parse data
 
+        if temp == "" or temp == " ":
+            break
+
         for temp_hi_words in hi_words: # Hi
-            if (temp == temp_hi_words):                
+            if (temp == temp_hi_words):
                 bot.sendMessage(chat_id, u'Привет, вот что я могу:')
                 bot.sendMessage(chat_id, string_start)
                 return
-                
+
         for temp_show_words in show_words: # Show
             if (temp == temp_show_words):
-                get_values()                  
+                get_values()
                 return
-            
+
         for temp_disable_words in disable_words: # Disable
             if (temp == temp_disable_words):
-                enable_stuff = 0                   
-                return
-            
+                enable_stuff = 0
+                break
+
         for temp_enable_words in enable_words: # Enable
             if (temp == temp_enable_words):
-                enable_stuff = 1                   
-                return
-            
+                enable_stuff = 1
+                break
+
         for temp_auto_words in auto_words: # Auto
             if (temp == temp_auto_words):
-                enable_stuff = 3                   
-                return
-            
+                enable_stuff = 3
+                break
+
         for temp_relay_words in relay_words: # relay
             if (temp == temp_relay_words):
-                is_word_relay = 1                   
-                return
-    
+                is_word_relay = 1
+                break
+
     # Let's do smtng
     if (is_word_relay == 1):
         if (enable_stuff == 0):
@@ -289,8 +290,7 @@ def make_good(data):
         elif (enable_stuff == 3):
             auto_relay()
         else:
-            bot.sendMessage(chat_id, 'Не совсем понял про реле')
-        
+            bot.sendMessage(chat_id, 'Не совсем понял про реле. Возможно, такое слово я не знаю')
 
 def handle(msg):
     global SET_USERS
@@ -311,7 +311,7 @@ def handle(msg):
     global SET_WEND_HOURS
 
     global VOICE
-    
+
     global chat_id
 
     chat_id = msg['chat']['id']
@@ -337,12 +337,12 @@ def handle(msg):
             return
 
     if VOICE == 1:
-        bot.download_file(msg['voice']['file_id'], 'voice.ogg')
-        exe = '''ffmpeg -y -i voice.ogg voice.wav'''
+        bot.download_file(msg['voice']['file_id'], '/home/pi/voice.ogg')
+        exe = '''ffmpeg -y -i /home/pi/voice.ogg /home/pi/voice.wav'''
         p = subprocess.Popen(["%s" % exe], shell=True, stdout=subprocess.PIPE)
         r = sr.Recognizer()
-        time.sleep(2)
-        with sr.AudioFile("voice.wav") as source:
+        time.sleep(3)
+        with sr.AudioFile("/home/pi/voice.wav") as source:
                 audio = r.record(source)
         try:
             recognized_text = r.recognize_google(audio, language="ru-RU")
@@ -379,10 +379,10 @@ def handle(msg):
         HOURS = HOURS_STOCK
         HOURS_WEND = HOURS_WEND_STOCK
         write_hours()
-        write_wend_hours()          
+        write_wend_hours()
     elif command == '/relay_on':
         enable_relay()
-    elif command == '/relay_off':        
+    elif command == '/relay_off':
         disable_relay()
     elif command == '/relay_auto':
         auto_relay()
@@ -401,16 +401,16 @@ def handle(msg):
             SET_FLOOR_DELTA_MIN = 0
             FLOOR_DELTA_MIN = command
             write_deltas()
-            
+
         elif SET_FLOOR_DELTA_MAX == 1:
             SET_FLOOR_DELTA_MAX = 0
             FLOOR_DELTA_MAX = command
-            write_deltas()            
+            write_deltas()
 
         elif SET_HOURS == 1:
             SET_HOURS = 0
             HOURS = command
-            write_hours()            
+            write_hours()
 
         elif SET_WEND_HOURS == 1:
             SET_WEND_HOURS = 0
@@ -430,6 +430,7 @@ bot = telepot.Bot('')
 
 MessageLoop(bot, handle).run_as_thread()
 print 'I am listening ...'
+initial_strings()
 
 while 1:
     time.sleep(5)
