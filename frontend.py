@@ -15,6 +15,8 @@ ALLOWED_USERS = ""
 SET_USERS = 0
 WRONG_ATTEMPTS = 0
 
+chat_id = ""
+
 is_initiated = 0
 hi_words = ""
 show_words = ""
@@ -141,50 +143,8 @@ def get_values():
     temp_stuff = f.read()
     DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = temp_stuff.split(" ")
     f.close()
-
-def enable_relay():
-    f = open(relay_mode_path, 'w')
-    f.write('on')
-    f.close()
-
-def disable_relay():
-    f = open(relay_mode_path, 'w')
-    f.write('off')
-    f.close()
-
-def auto_relay():
-    f = open(relay_mode_path, 'w')
-    f.write('auto')
-    f.close()
-
-def set_hours_off():
-    f = open(hours_mode_path, 'w')
-    f.write('off')
-    f.close()
-
-def set_hours_on():
-    f = open(hours_mode_path, 'w')
-    f.write('on')
-    f.close()
-
-def write_deltas():
-    f = open(air_and_floor_path, 'w')
-    f.write(str(FLOOR_DELTA_MIN) + " " + str(AIR_TEMP) + " " + str(FLOOR_DELTA_MAX))
-    f.close()
-
-def write_hours():
-    f = open(hours_path, 'w')
-    f.write(str(HOURS))
-    f.close()
-
-def write_wend_hours():
-    f = open(hours_wend_path, 'w')
-    f.write(str(HOURS_WEND))
-    f.close()
-
-def string_get():
-    get_values()
-    string_get = ("Режим реле (on|off|auto): " + str(RELAY_MODE)
+    
+    bot.sendMessage(chat_id, "Режим реле (on|off|auto): " + str(RELAY_MODE)
         + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
         + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
         + "\nТемпература подачи = " + str(DS_2)[:5] + " C"
@@ -199,7 +159,56 @@ def string_get():
         + "\n\nЧасы будние дни = " + str(HOURS)
         + "\nЧасы выходные= " + str(HOURS_WEND)
         + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
-    return string_get()
+
+def enable_relay():
+    f = open(relay_mode_path, 'w')
+    f.write('on')
+    f.close()
+    bot.sendMessage(chat_id, "Принудительное ВКЛючение реле")
+
+def disable_relay():
+    f = open(relay_mode_path, 'w')
+    f.write('off')
+    f.close()
+    bot.sendMessage(chat_id, "Принудительное ВЫКЛючение реле")
+
+def auto_relay():
+    f = open(relay_mode_path, 'w')
+    f.write('auto')
+    f.close()
+    bot.sendMessage(chat_id, "Реле в АВТОматическом режиме")
+
+def set_hours_off():
+    f = open(hours_mode_path, 'w')
+    f.write('off')
+    f.close()
+    bot.sendMessage(chat_id, "Режим работы по часам ВЫКЛючен")
+
+def set_hours_on():
+    f = open(hours_mode_path, 'w')
+    f.write('on')
+    f.close()
+    bot.sendMessage(chat_id, "Режима работы по часам ВКЛючен")
+
+def write_deltas():
+    f = open(air_and_floor_path, 'w')
+    f.write(str(FLOOR_DELTA_MIN) + " " + str(AIR_TEMP) + " " + str(FLOOR_DELTA_MAX))
+    f.close()
+    bot.sendMessage(chat_id, "Максимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MAX)
+                   + "\nМинимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MIN)
+                   + "\nЖелаемая температура возудха: " + str(AIR_TEMP))
+
+def write_hours():
+    f = open(hours_path, 'w')
+    f.write(str(HOURS))
+    f.close()
+    bot.sendMessage(chat_id, "Часы работы реле в будние: " + str(HOURS))
+
+def write_wend_hours():
+    f = open(hours_wend_path, 'w')
+    f.write(str(HOURS_WEND))
+    f.close()
+    bot.sendMessage(chat_id, "Часы работы реле в выходные: " + str(HOURS_WEND))
 
 def normalization(norm_string):
     
@@ -251,7 +260,7 @@ def initial_strings():
    
     is_initiated = 1
     
-def make_good(chat_id, data):
+def make_good(data):
     
     initial_strings()
     
@@ -270,7 +279,7 @@ def make_good(chat_id, data):
                 
         for temp_show_words in show_words: # Show
             if (temp == temp_show_words):
-                bot.sendMessage(chat_id, string_get())                   
+                get_values()                  
                 return
             
         for temp_disable_words in disable_words: # Disable
@@ -324,6 +333,8 @@ def handle(msg):
     global SET_WEND_HOURS
 
     global VOICE
+    
+    global chat_id
 
     chat_id = msg['chat']['id']
 
@@ -358,7 +369,7 @@ def handle(msg):
         try:
             recognized_text = r.recognize_google(audio, language="ru-RU")
             bot.sendMessage(chat_id, 'Вы сказали: ' + recognized_text.encode('utf8'))
-            make_good(chat_id, recognized_text)
+            make_good(recognized_text)
         except sr.UnknownValueError:
             bot.sendMessage(chat_id, u"Гугл не понимает тебя")
         except sr.RequestError as e:
@@ -384,28 +395,21 @@ def handle(msg):
         bot.sendMessage(chat_id, "Введите значения, разделенные пробелом")
     elif command == '/set_hours_on':
         set_hours_on()
-        bot.sendMessage(chat_id, "Режима работы по часам ВКЛючен")
     elif command == '/set_hours_off':
         set_hours_off()
-        bot.sendMessage(chat_id, "Режим работы по часам ВЫКЛючен")
     elif command == '/set_default_hours':
         HOURS = HOURS_STOCK
         HOURS_WEND = HOURS_WEND_STOCK
         write_hours()
-        write_wend_hours()
-        bot.sendMessage(chat_id, "Часы работы реле в будний: " + str(HOURS))
-        bot.sendMessage(chat_id, "Часы работы реле в выходной: " + str(HOURS_WEND))
+        write_wend_hours()          
     elif command == '/relay_on':
-        bot.sendMessage(chat_id, "Принудительное ВКЛючение реле")
         enable_relay()
-    elif command == '/relay_off':
-        bot.sendMessage(chat_id, "Принудительное ВЫКЛючение реле")
+    elif command == '/relay_off':        
         disable_relay()
     elif command == '/relay_auto':
-        bot.sendMessage(chat_id, "Реле в АВТОматическом режиме")
         auto_relay()
     elif command == '/get':
-        bot.sendMessage(chat_id, string_get())
+        get_values()
     elif command == '/set_id_users':
         SET_USERS = 1
         bot.sendMessage(chat_id, "Айдишники через пробел")
@@ -414,31 +418,26 @@ def handle(msg):
             SET_AIR_TEMP = 0
             AIR_TEMP = command
             write_deltas()
-            bot.sendMessage(chat_id, "Желаемая температура возудха: " + str(AIR_TEMP))
 
         elif SET_FLOOR_DELTA_MIN == 1:
             SET_FLOOR_DELTA_MIN = 0
             FLOOR_DELTA_MIN = command
             write_deltas()
-            bot.sendMessage(chat_id, "Минимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MIN))
             
         elif SET_FLOOR_DELTA_MAX == 1:
             SET_FLOOR_DELTA_MAX = 0
             FLOOR_DELTA_MAX = command
-            write_deltas()
-            bot.sendMessage(chat_id, "Максимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MAX))
+            write_deltas()            
 
         elif SET_HOURS == 1:
             SET_HOURS = 0
             HOURS = command
-            write_hours()
-            bot.sendMessage(chat_id, "Часы установлены: " + str(HOURS))
+            write_hours()            
 
         elif SET_WEND_HOURS == 1:
             SET_WEND_HOURS = 0
             HOURS_WEND = command
             write_wend_hours()
-            bot.sendMessage(chat_id, "Часы для выходных установлены: " + str(HOURS_WEND))
 
         elif SET_USERS == 1:
             SET_USERS = 0
