@@ -159,6 +159,12 @@ def write_wend_hours():
     f.write(str(HOURS_WEND))
     f.close()
 
+def make_good(chat_id,data):
+    data = data.encode('utf-8')
+    if (data == 'Привет'):
+        bot.sendMessage(chat_id, 'wew')
+
+
 def handle(msg):
     global SET_USERS
     global ALLOWED_USERS
@@ -212,6 +218,7 @@ def handle(msg):
         try:
             recognized_text = r.recognize_google(audio, language="ru-RU")
             bot.sendMessage(chat_id, 'Вы сказали: ' + recognized_text.encode('utf-8'))
+            make_good(chat_id, recognized_text)
         except sr.UnknownValueError:
             bot.sendMessage(chat_id, "Google Speech Recognition could not understand audio")
         except sr.RequestError as e:
