@@ -7,9 +7,8 @@ import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 import subprocess
-from pocketsphinx.pocketsphinx import *
-from sphinxbase.sphinxbase import *
 from os import environ, path
+import speech_recognition as sr
 
 ALLOWED_USERS = ""
 SET_USERS = 0
@@ -203,41 +202,21 @@ def handle(msg):
             return
 
     if VOICE == 1:
-         bot.download_file(msg['voice']['file_id'], 'voice.ogg')
-        exe = '''ffmpeg -y -i voice.ogg -ac 1 -ar 8000  voice.wav'''
+        bot.download_file(msg['voice']['file_id'], 'voice.ogg')
+        exe = '''ffmpeg -y -i voice.ogg voice.wav'''
         p = subprocess.Popen(["%s" % exe], shell=True, stdout=subprocess.PIPE)
-        time.sleep(5)
-        #MODELDIR='/home/kotsareu/.local/lib/python2.7/site-packages/pocketsphinx/model'
-        MODELDIR='/home/kotsareu/Downloads/python/cmusphinx-ru-5.2'
-        DICDIR = './'
-        sys.stderr = open(path.join(DICDIR, "stderr.log"), "a")
-        config = Decoder.default_config()
-        config.set_string('-hmm', MODELDIR)
-        config.set_string('-lm', path.join(MODELDIR, 'lmbase.lm.DMP'))
-        config.set_string('-dict', path.join(MODELDIR, 'my_dict.dic'))
-        decoder = Decoder(config)
-        in_speech_bf = False
-        stream = open('voice.wav', 'rb')
-        decoder.start_utt()
-        while True:
-            buf = stream.read(80000)
-            if buf:
-                print "\n buf"
-                decoder.process_raw(buf, False, False)
-                print('Partial decoding result:', decoder.hyp().hypstr)
-                if decoder.get_in_speech() != in_speech_bf:
-                    print "\n next step"
-                    in_speech_bf = decoder.get_in_speech()
-                    print ("\n in speech", str(in_speech_buf))
-                    if not in_speech_bf:
-                        decoder.end_utt()
-                        print ("\n\n Got message:", decoder.hyp().hypstr)
-                        bot.sendMessage(chat_id, str(decoder.hyp().hypstr))
-                        decoder.start_utt()
-                    else:
-                       break
-            decoder.end_utt()
-            
+        r = sr.Recognizer()
+        time.sleep (2)
+        with sr.AudioFile("voice.wav") as source:
+                audio = r.record(source)
+        try:
+            recognized_text = r.recognize_google(audio, language="ru-RU")
+            bot.sendMessage(chat_id, 'Вы сказали: ' + recognized_text.encode('utf-8'))
+        except sr.UnknownValueError:
+            bot.sendMessage(chat_id, "Google Speech Recognition could not understand audio")
+        except sr.RequestError as e:
+            bot.sendMessage(chat_id, "Could not request results from Google Speech Recognition service; {0}".format(e))
+
     elif command == '/start':
         markup = ReplyKeyboardMarkup(keyboard=[['/get', '/start']])
         bot.sendMessage(chat_id,
