@@ -172,18 +172,17 @@ def set_hours_on():
     bot.sendMessage(chat_id, "Режима работы по часам ВКЛючен")
 
 def write_deltas():
-    write_file(air_and_floor_path, str(FLOOR_DELTA_MIN) + " " + str(AIR_TEMP) + " " + str(FLOOR_DELTA_MAX))
-    bot.sendMessage(chat_id, "Максимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MAX)
-                   + "\nМинимальная дельта пола для срабатывания: " + str(FLOOR_DELTA_MIN)
-                   + "\nЖелаемая температура возудха: " + str(AIR_TEMP))
-
+    write_file(air_and_floor_path, "%s %s %s" % (FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX))
+    bot.sendMessage(chat_id,
+            "Максимальная дельта пола для срабатывания: %s\nМинимальная дельта пола для срабатывания: %s\nЖелаемая температура возудха: %s"
+            % (FLOOR_DELTA_MAX, FLOOR_DELTA_MIN, AIR_TEM))
 def write_hours():
     write_file(hours_path, HOURS)
-    bot.sendMessage(chat_id, "Часы работы реле в будние: " + str(HOURS))
+    bot.sendMessage(chat_id, "Часы работы реле в будние: %s" %HOURS)
 
 def write_wend_hours():
     write_file(hours_wend_path, HOURS_WEND)
-    bot.sendMessage(chat_id, "Часы работы реле в выходные: " + str(HOURS_WEND))
+    bot.sendMessage(chat_id, "Часы работы реле в выходные: %s" % HOURS_WEND)
 
 def normalization(norm_string):
 
@@ -191,15 +190,19 @@ def normalization(norm_string):
 
     norm_string = norm_string.lower()
     norm_string = norm_string.split(" ")
-    temp_string = ""
+    temp_list = []
 
     for temp in norm_string:
         temp = temp.decode('utf-8')
         temp_morph = morph.parse(temp)[0]
         temp_morph = temp_morph.normal_form
-        temp_string += temp_morph + " "
+        temp_list.append(temp_morph)
+        #temp_string = "".join(temp_morph)
+        #temp_string = "".join(" ")
 
-    return temp_string.split(" ")
+    print temp_list
+
+    return temp_list
 
 def initial_strings():
     global hi_words
@@ -327,7 +330,7 @@ def handle(msg):
         if str(chat_id) != str(temp) and int(chat_id) != 61099099:
             if WRONG_ATTEMPTS < 2 :
                 print msg['from']['id']
-                bot.sendMessage(chat_id, "Неверный id " + str(msg['from']['id']))
+                bot.sendMessage(chat_id, "Неверный id %s" % msg['from']['id'])
                 WRONG_ATTEMPTS += 1
             elif WRONG_ATTEMPTS == 2:
                 bot.sendMessage(chat_id, 'Эй, дружище, займись чем-нибудь другим')
@@ -417,7 +420,7 @@ def handle(msg):
             SET_USERS = 0
             ALLOWED_USERS = command
             write_users()
-            bot.sendMessage(chat_id, "Пользователи теперь такие - " + str(ALLOWED_USERS))
+            bot.sendMessage(chat_id, "Пользователи теперь такие - %s " % ALLOWED_USERS)
         else:
             markup = ReplyKeyboardMarkup(keyboard=[['/get'],[ '/start']])
             bot.sendMessage(chat_id, '', reply_markup=markup)
