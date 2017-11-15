@@ -15,6 +15,10 @@ ALLOWED_USERS = ""
 SET_USERS = 0
 WRONG_ATTEMPTS = 0
 
+is_initiated = 0
+hi_words = ""
+show_words = ""
+
 SET_AIR_TEMP = 0
 SET_FLOOR_DELTA_MIN = 0
 SET_FLOOR_DELTA_MAX = 0
@@ -193,45 +197,58 @@ def string_get():
         + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
     return string_get()
 
-def make_good(chat_id, data):
+def normalization(norm_string):
     
     morph = pymorphy2.MorphAnalyzer()
-    normalized_data = ""
     
-    data = data.lower()      
-    data = data.split()    
-    
-    for temp in data:
-        temp_morph = morph.parse(temp)[0]
-        temp_morph = temp_morph.normal_form        
-        normalized_data += " " + temp_morph
-        
-    #bot.sendMessage(chat_id, u'Получилось так: ' + normalized_data)
-    
-    hi_words = u'Привет Здаров Здравствовать День Приветулить Хай Хей-хо' 
-    hi_words = hi_words.lower()      
-    hi_words = hi_words.split(" ")
-    
-    show_words = u'Показать Состояние Статус Текущий Параметр Отобразить Запилить Информация Инф' 
-    show_words = show_words.lower()      
-    show_words = show_words.split(" ")
+    norm_string = norm_string.lower()      
+    norm_string = norm_string.split(" ")
+    temp_string = ""
 
-    ################## temp block ################### 
-    for temp in show_words:
+    for temp in norm_string:        
+        temp = temp.decode('utf-8') 
         temp_morph = morph.parse(temp)[0]
         temp_morph = temp_morph.normal_form        
-        print temp_morph
-    #################################################
+        temp_string += temp_morph + " "
+
+    return temp_string.split(" ")
+
+def initial_strings():
+    global hi_words
+    global show_words
+    global is_initiated
     
-    normalized_data = normalized_data.split(" ")
+    if (is_initiated == 1):
+        return
+    
+    hi_words = 'Привет Здарова Здравствуй День Приветули Хай Хей-хо' 
+    hi_words = normalization(hi_words)
+
+    show_words = 'Покажи Состояние Статус Текущие Параметры Отобрази Запили Информация Инфа' 
+    show_words = normalization(show_words)
+   
+    is_initiated = 1
+    
+def make_good(chat_id, data):
+    
+    initial_strings()
+
+    normalized_data = normalization(data.encode('utf-8'))   
+    
     for temp in normalized_data:
+        print temp
         for temp_hi_words in hi_words:
-            if (temp == temp_hi_words):
+            print temp_hi_words
+            if (temp == temp_hi_words):                
                 bot.sendMessage(chat_id, u'Привет, вот что я могу:')
                 bot.sendMessage(chat_id, string_start)
+                return
+                
         for temp_show_words in show_words:
+            print temp_show_words
             if (temp == temp_show_words):
-                bot.sendMessage(chat_id, string_get())
+                bot.sendMessage(chat_id, string_get())                   
+                return
 
 def handle(msg):
     global SET_USERS
