@@ -24,12 +24,6 @@ relay_words = ""
 SET_AIR_TEMP = 0
 SET_FLOOR_DELTA_MIN = 0
 SET_FLOOR_DELTA_MAX = 0
-AIR_TEMP_STOCK = 23
-FLOOR_DELTA_MIN_STOCK = 1.5
-FLOOR_DELTA_MIN = 0
-FLOOR_DELTA_MAX_STOCK = 11
-FLOOR_DELTA_MAX = 0
-AIR_TEMP = 0
 
 SET_HOURS = 0
 SET_WEND_HOURS = 0
@@ -48,7 +42,6 @@ hours_wend_path = HOME_PATH + 'hours_wend'
 hours_mode_path = HOME_PATH + 'hours_mode'
 all_values_path = HOME_PATH + 'all_values'
 users_path = HOME_PATH + "users"
-
 
 string_start = "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s" % ( 
           "/get - получение информации: с датчиков, реле, по часам"
@@ -83,12 +76,7 @@ def write_users():
     write_file(users_path, ALLOWED_USERS)
 
 def get_deltas():
-    global FLOOR_DELTA_MIN
-    global FLOOR_DELTA_MAX
-    global AIR_TEMP
-
-    temp_stuff = read_file(air_and_floor_path)
-    FLOOR_DELTA_MIN,AIR_TEMP, FLOOR_DELTA_MAX = temp_stuff.split(" ")
+    return read_file(air_and_floor_path)
 
 def get_hours():
     return read_file(hours_path)
@@ -111,10 +99,9 @@ def get_values():
     DHT_T = 0
     RELAY_STATUS = 0
 
-    get_deltas()
-
-    temp_stuff = read_file(all_values_path)
-    DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = temp_stuff.split(" ")
+    FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX = get_deltas().split(" ")
+        
+    DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = read_file(all_values_path).split(" ")
         
     values_string = "%s\n%s\n\n%s\n%s\n\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s" % (
             "Режим реле (on|off|auto): %s"
@@ -158,11 +145,11 @@ def set_hours_on():
     write_file(hours_mode_path, 'on')
     bot.sendMessage(chat_id, "Режима работы по часам ВКЛючен")
 
-def write_deltas():
+def write_deltas(FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX):
     write_file(air_and_floor_path, "%s %s %s" % (FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX))
     bot.sendMessage(chat_id,
             "Максимальная дельта пола для срабатывания: %s\nМинимальная дельта пола для срабатывания: %s\nЖелаемая температура возудха: %s"
-            % (FLOOR_DELTA_MAX, FLOOR_DELTA_MIN, AIR_TEM))
+            % (FLOOR_DELTA_MAX, FLOOR_DELTA_MIN, AIR_TEMP))
         
 def write_hours(HOURS):
     write_file(hours_path, HOURS)
@@ -288,12 +275,8 @@ def handle(msg):
     global WRONG_ATTEMPTS
 
     global SET_AIR_TEMP
-    global AIR_TEMP
-
     global SET_FLOOR_DELTA_MIN
-    global FLOOR_DELTA_MIN
     global SET_FLOOR_DELTA_MAX
-    global FLOOR_DELTA_MAX
 
     global SET_HOURS
     global SET_WEND_HOURS
@@ -377,20 +360,21 @@ def handle(msg):
         SET_USERS = 1
         bot.sendMessage(chat_id, "Айдишники через пробел")
     else:
-        if SET_AIR_TEMP == 1:
-            SET_AIR_TEMP = 0
-            AIR_TEMP = command
-            write_deltas()
+        if SET_AIR_TEMP == 1 or SET_FLOOR_DELTA_MIN == 1 or SET_FLOOR_DELTA_MAX == 1:
+            FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX = get_deltas().split(" ")
+            if SET_AIR_TEMP == 1:
+                SET_AIR_TEMP = 0
+                AIR_TEMP = command.encode('utf-8')
 
-        elif SET_FLOOR_DELTA_MIN == 1:
-            SET_FLOOR_DELTA_MIN = 0
-            FLOOR_DELTA_MIN = command
-            write_deltas()
+            if SET_FLOOR_DELTA_MIN == 1:
+                SET_FLOOR_DELTA_MIN = 0
+                FLOOR_DELTA_MIN = command.encode('utf-8')
 
-        elif SET_FLOOR_DELTA_MAX == 1:
-            SET_FLOOR_DELTA_MAX = 0
-            FLOOR_DELTA_MAX = command
-            write_deltas()
+            if SET_FLOOR_DELTA_MAX == 1:
+                SET_FLOOR_DELTA_MAX = 0
+                FLOOR_DELTA_MAX = command.encode('utf-8')
+                
+            write_deltas(FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX)
 
         elif SET_HOURS == 1:
             SET_HOURS = 0
