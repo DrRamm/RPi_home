@@ -31,8 +31,6 @@ FLOOR_DELTA_MAX_STOCK = 11
 FLOOR_DELTA_MAX = 0
 AIR_TEMP = 0
 
-HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
-HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
 SET_HOURS = 0
 SET_WEND_HOURS = 0
 
@@ -93,11 +91,10 @@ def get_deltas():
     FLOOR_DELTA_MIN,AIR_TEMP, FLOOR_DELTA_MAX = temp_stuff.split(" ")
 
 def get_hours():
-    global HOURS
-    global HOURS_WEND
+    return read_file(hours_path)
 
-    HOURS = read_file(hours_path)
-    HOURS_WEND = read_file(hours_wend_path)
+def get_hours_wend():
+    return read_file(hours_wend_path)
 
 def get_relay_mode():
     return read_file(relay_mode_path)
@@ -114,7 +111,6 @@ def get_values():
     DHT_T = 0
     RELAY_STATUS = 0
 
-    get_hours()
     get_deltas()
 
     temp_stuff = read_file(all_values_path)
@@ -140,7 +136,7 @@ def get_values():
     bot.sendMessage(chat_id, values_string % (
             get_hours_mode(), RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5], 
             FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5], 
-            AIR_TEMP, str(HOURS), str(HOURS_WEND), get_hours_mode()))
+            AIR_TEMP, get_hours(), get_hours_wend(), get_hours_mode()))
 
 def enable_relay():
     write_file(relay_mode_path, 'on')
@@ -167,13 +163,21 @@ def write_deltas():
     bot.sendMessage(chat_id,
             "Максимальная дельта пола для срабатывания: %s\nМинимальная дельта пола для срабатывания: %s\nЖелаемая температура возудха: %s"
             % (FLOOR_DELTA_MAX, FLOOR_DELTA_MIN, AIR_TEM))
-def write_hours():
+        
+def write_hours(HOURS):
     write_file(hours_path, HOURS)
-    bot.sendMessage(chat_id, "Часы работы реле в будние: %s" %HOURS)
+    bot.sendMessage(chat_id, "Часы работы реле в будние: \n%s" %HOURS)
 
-def write_wend_hours():
+def write_wend_hours(HOURS_WEND):
     write_file(hours_wend_path, HOURS_WEND)
-    bot.sendMessage(chat_id, "Часы работы реле в выходные: %s" % HOURS_WEND)
+    bot.sendMessage(chat_id, "Часы работы реле в выходные: \n%s" % HOURS_WEND)
+
+def set_default_hours():
+    HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
+    HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
+    
+    write_hours(HOURS_STOCK)
+    write_wend_hours(HOURS_STOCK_WEND)
 
 def normalization(norm_string):
 
@@ -291,8 +295,6 @@ def handle(msg):
     global SET_FLOOR_DELTA_MAX
     global FLOOR_DELTA_MAX
 
-    global HOURS
-    global HOURS_WEND
     global SET_HOURS
     global SET_WEND_HOURS
 
@@ -362,10 +364,7 @@ def handle(msg):
     elif command == '/set_hours_off':
         set_hours_off()
     elif command == '/set_default_hours':
-        HOURS = HOURS_STOCK
-        HOURS_WEND = HOURS_WEND_STOCK
-        write_hours()
-        write_wend_hours()
+        set_default_hours()
     elif command == '/relay_on':
         enable_relay()
     elif command == '/relay_off':
@@ -395,13 +394,11 @@ def handle(msg):
 
         elif SET_HOURS == 1:
             SET_HOURS = 0
-            HOURS = command
-            write_hours()
+            write_hours(command.encode('utf-8'))
 
         elif SET_WEND_HOURS == 1:
             SET_WEND_HOURS = 0
-            HOURS_WEND = command
-            write_wend_hours()
+            write_wend_hours(command.encode('utf-8'))
 
         elif SET_USERS == 1:
             SET_USERS = 0
