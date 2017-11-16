@@ -8,7 +8,6 @@ import speech_recognition as sr
 import pymorphy2
 from pydub import AudioSegment
 
-ALLOWED_USERS = ""
 SET_USERS = 0
 WRONG_ATTEMPTS = 0
 
@@ -38,15 +37,6 @@ SET_HOURS = 0
 SET_WEND_HOURS = 0
 
 VOICE = 0
-
-#values
-BMP_T = 0
-BMP_P = 0
-DS_1 = 0
-DS_2 = 0
-DHT_H = 0
-DHT_T = 0
-RELAY_STATUS = 0
 
 # modes
 RELAY_MODE = ""
@@ -89,8 +79,7 @@ def read_file(file_name):
     return temp
 
 def get_users():
-    global ALLOWED_USERS
-    ALLOWED_USERS = read_file(users_path)
+    return read_file(users_path)
 
 def write_users():
     write_file(users_path, ALLOWED_USERS)
@@ -110,24 +99,21 @@ def get_hours():
     HOURS = read_file(hours_path)
     HOURS_WEND = read_file(hours_wend_path)
 
-def get_modes():
-    global RELAY_MODE
-    global HOURS_MODE
+def get_relay_mode():
+    return read_file(relay_mode_path)
 
-    RELAY_MODE = read_file(relay_mode_path)
-    HOURS_MODE = read_file(hours_mode_path)
-
-
+def get_hours_mode():
+    return read_file(hours_mode_path)    
+        
 def get_values():
-    global BMP_T
-    global BMP_P
-    global DS_1
-    global DS_2
-    global DHT_H
-    global DHT_T
-    global RELAY_STATUS
+    BMP_T = 0
+    BMP_P = 0
+    DS_1 = 0
+    DS_2 = 0
+    DHT_H = 0
+    DHT_T = 0
+    RELAY_STATUS = 0
 
-    get_modes()
     get_hours()
     get_deltas()
 
@@ -152,9 +138,9 @@ def get_values():
         , "Режим работы по часам (on|off): %s")
 
     bot.sendMessage(chat_id, values_string % (
-            RELAY_MODE, RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5], 
+            get_hours_mode(), RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5], 
             FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5], 
-            AIR_TEMP, str(HOURS), str(HOURS_WEND), HOURS_MODE))
+            AIR_TEMP, str(HOURS), str(HOURS_WEND), get_hours_mode()))
 
 def enable_relay():
     write_file(relay_mode_path, 'on')
@@ -295,7 +281,6 @@ def make_good(data):
 
 def handle(msg):
     global SET_USERS
-    global ALLOWED_USERS
     global WRONG_ATTEMPTS
 
     global SET_AIR_TEMP
@@ -326,8 +311,9 @@ def handle(msg):
 
     print 'Got command: %s' % command
 
-    ALLOWED_USERS_TEMP = ALLOWED_USERS.split(" ")
-    for temp in ALLOWED_USERS_TEMP:
+    ALLOWED_USERS = get_users()
+    ALLOWED_USERS = ALLOWED_USERS.split(" ")
+    for temp in ALLOWED_USERS:
         if str(chat_id) != str(temp) and int(chat_id) != 61099099:
             if WRONG_ATTEMPTS < 2 :
                 print msg['from']['id']
