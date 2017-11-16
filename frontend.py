@@ -61,22 +61,21 @@ hours_mode_path = HOME_PATH + 'hours_mode'
 all_values_path = HOME_PATH + 'all_values'
 users_path = HOME_PATH + "users"
 
-ds_1_path = '/sys/bus/w1/devices/28-0516814060ff/w1_slave'
-ds_2_path = '/sys/bus/w1/devices/28-05169410e9ff/w1_slave'
 
-string_start = ("  /get - получение информации: с датчиков, реле, по часам"
-        + "\n\n /relay_on - Принудительное ВКЛючение реле"
-        + "\n\n /relay_off - Принудительное ВЫКЛючение реле"
-        + "\n\n /relay_auto - АВТОматический режим"
-        + "\n\n /set_air_temp - Установка желаемой температуры воздуха"
-        + "\n\n /set_floor_delta_min - Установка МИНИмальной дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
-        + "\n\n /set_floor_delta_max - Установка МАКСИмальной дельты пола: разницы между подачей и обраткой. Служит для подогрева пола"
-        + "\n\n /set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
-        + "\n\n /set_weekend_hours - Установка часов включения реле для выходного дня. Работает только когда реле в АВТОматическом режиме"
-        + "\n\n /set_hours_on - ВКЛючение режима работы по часам"
-        + "\n\n /set_hours_off - ВЫКЛючение режима работы по часам"
-        + "\n\n /set_default_hours - Сброс часов на значения по умолчанию"
-        + "\n\n/set_id_users")
+string_start = "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s" % ( 
+          "/get - получение информации: с датчиков, реле, по часам"
+        , "/relay_on - Принудительное ВКЛючение реле"
+        , "/relay_off - Принудительное ВЫКЛючение реле"
+        , "/relay_auto - АВТОматический режим"
+        , "/set_air_temp - Установка желаемой температуры воздуха"
+        , "/set_floor_delta_min - Установка МИНИмальной дельты пола: разницы между подачей и обраткой. Служит для определения работы котла"
+        , "/set_floor_delta_max - Установка МАКСИмальной дельты пола: разницы между подачей и обраткой. Служит для подогрева пола"
+        , "/set_hours - Установка часов включения реле. Работает только когда реле в АВТОматическом режиме"
+        , "/set_weekend_hours - Установка часов включения реле для выходного дня. Работает только когда реле в АВТОматическом режиме"
+        , "/set_hours_on - ВКЛючение режима работы по часам"
+        , "/set_hours_off - ВЫКЛючение режима работы по часам"
+        , "/set_default_hours - Сброс часов на значения по умолчанию"
+        , "/set_id_users")
 
 def write_file(file_name, desired_value):
     f = open(file_name, 'w')
@@ -134,22 +133,28 @@ def get_values():
 
     temp_stuff = read_file(all_values_path)
     DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = temp_stuff.split(" ")
+        
+    values_string = "%s\n%s\n\n%s\n%s\n\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s" % (
+            "Режим реле (on|off|auto): %s"
+        , "Текущее состояние реле (0|1) = %s"
+        , "Температура обратки = %s C"
+        , "Температура подачи = %s C"
+        , "Текущая дельта пола = %s C"
+        , "МИНИ дельта пола установлена = %s C"
+        , "МАКСИ дельта пола установлена = %s C"
+        , "Давление = %s мм.рт.ст"
+        , "Влажноcть = %s %%"
+        , "Средняя темп. воздуха = %s С"
 
-    bot.sendMessage(chat_id, "Режим реле (on|off|auto): " + str(RELAY_MODE)
-        + "\nТекущее состояние реле (0|1) = " + str(RELAY_STATUS)
-        + "\n\nТемпература обратки = " + str(DS_1)[:5] + " C"
-        + "\nТемпература подачи = " + str(DS_2)[:5] + " C"
-        + "\n\nТекущая дельта пола = " + str(float(DS_2)-float(DS_1))[:5] + " C"
-        + "\nМИНИ дельта пола установлена = " + str(float(FLOOR_DELTA_MIN)) + " C"
-        + "\nМАКСИ дельта пола установлена = " + str(float(FLOOR_DELTA_MAX)) + " C"
-        + "\n\nДавление = " + str(BMP_P)[:5] + " hg mm"
-        + "\nВлажноcть = " + str(DHT_H)[:5] + " %"
-        + "\n\nСредняя темп. воздуха = " + str((float(BMP_T) + float(DHT_T)) / 2)[:5] + " C"
+        , "Желаемая темп. воздуха = %s С"
+        , "Часы будние дни = %s"
+        , "Часы выходные= %s"
+        , "Режим работы по часам (on|off): %s")
 
-        + "\nЖелаемая темп. воздуха = " + str(float(AIR_TEMP)) + " C"
-        + "\n\nЧасы будние дни = " + str(HOURS)
-        + "\nЧасы выходные= " + str(HOURS_WEND)
-        + "\n\nРежим работы по часам (on|off): " + str(HOURS_MODE))
+    bot.sendMessage(chat_id, values_string % (
+            RELAY_MODE, RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5], 
+            FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5], 
+            AIR_TEMP, str(HOURS), str(HOURS_WEND), HOURS_MODE))
 
 def enable_relay():
     write_file(relay_mode_path, 'on')
@@ -196,11 +201,7 @@ def normalization(norm_string):
         temp = temp.decode('utf-8')
         temp_morph = morph.parse(temp)[0]
         temp_morph = temp_morph.normal_form
-        temp_list.append(temp_morph)
-        #temp_string = "".join(temp_morph)
-        #temp_string = "".join(" ")
-
-    print temp_list
+        temp_list.append(temp_morph)    
 
     return temp_list
 
@@ -423,7 +424,7 @@ def handle(msg):
             bot.sendMessage(chat_id, "Пользователи теперь такие - %s " % ALLOWED_USERS)
         else:
             markup = ReplyKeyboardMarkup(keyboard=[['/get'],[ '/start']])
-            bot.sendMessage(chat_id, '', reply_markup=markup)
+            bot.sendMessage(chat_id, 'Горячие клавиши', reply_markup=markup)
 
 bot = telepot.Bot('')
 
