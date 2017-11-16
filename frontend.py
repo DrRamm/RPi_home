@@ -30,10 +30,6 @@ SET_WEND_HOURS = 0
 
 VOICE = 0
 
-# modes
-RELAY_MODE = ""
-HOURS_MODE = ""
-
 HOME_PATH = '/home/pi/'
 air_and_floor_path = HOME_PATH + 'deltas'
 relay_mode_path = HOME_PATH + 'relay_mode'
