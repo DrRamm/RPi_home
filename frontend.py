@@ -39,7 +39,7 @@ hours_mode_path = HOME_PATH + 'hours_mode'
 all_values_path = HOME_PATH + 'all_values'
 users_path = HOME_PATH + "users"
 
-string_start = "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s" % ( 
+string_start = "\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s" % (
           "/get - получение информации: с датчиков, реле, по часам"
         , "/relay_on - Принудительное ВКЛючение реле"
         , "/relay_off - Принудительное ВЫКЛючение реле"
@@ -84,8 +84,8 @@ def get_relay_mode():
     return read_file(relay_mode_path)
 
 def get_hours_mode():
-    return read_file(hours_mode_path)    
-        
+    return read_file(hours_mode_path)
+
 def get_values():
     BMP_T = 0
     BMP_P = 0
@@ -96,9 +96,9 @@ def get_values():
     RELAY_STATUS = 0
 
     FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX = get_deltas().split(" ")
-        
+
     DS_1, DS_2, BMP_T, BMP_P, DHT_H, DHT_T, RELAY_STATUS = read_file(all_values_path).split(" ")
-        
+
     values_string = "%s\n%s\n\n%s\n%s\n\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s" % (
             "Режим реле (on|off|auto): %s"
         , "Текущее состояние реле (0|1) = %s"
@@ -117,8 +117,8 @@ def get_values():
         , "Режим работы по часам (on|off): %s")
 
     bot.sendMessage(chat_id, values_string % (
-            get_hours_mode(), RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5], 
-            FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5], 
+            get_relay_mode(), RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5],
+            FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5],
             AIR_TEMP, get_hours(), get_hours_wend(), get_hours_mode()))
 
 def enable_relay():
@@ -146,7 +146,7 @@ def write_deltas(FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX):
     bot.sendMessage(chat_id,
             "Максимальная дельта пола для срабатывания: %s\nМинимальная дельта пола для срабатывания: %s\nЖелаемая температура возудха: %s"
             % (FLOOR_DELTA_MAX, FLOOR_DELTA_MIN, AIR_TEMP))
-        
+
 def write_hours(HOURS):
     write_file(hours_path, HOURS)
     bot.sendMessage(chat_id, "Часы работы реле в будние: \n%s" %HOURS)
@@ -158,7 +158,7 @@ def write_wend_hours(HOURS_WEND):
 def set_default_hours():
     HOURS_STOCK = '1 3 5 6 7 13 16 18 19 20 22'
     HOURS_STOCK_WEND = '1 3 5 6 7 9 14 15 16 17 18 19 20 22'
-    
+
     write_hours(HOURS_STOCK)
     write_wend_hours(HOURS_STOCK_WEND)
 
@@ -174,7 +174,7 @@ def normalization(norm_string):
         temp = temp.decode('utf-8')
         temp_morph = morph.parse(temp)[0]
         temp_morph = temp_morph.normal_form
-        temp_list.append(temp_morph)    
+        temp_list.append(temp_morph)
 
     return temp_list
 
@@ -369,7 +369,7 @@ def handle(msg):
             if SET_FLOOR_DELTA_MAX == 1:
                 SET_FLOOR_DELTA_MAX = 0
                 FLOOR_DELTA_MAX = command.encode('utf-8')
-                
+
             write_deltas(FLOOR_DELTA_MIN, AIR_TEMP, FLOOR_DELTA_MAX)
 
         elif SET_HOURS == 1:
@@ -396,4 +396,4 @@ print 'I am listening ...'
 initial_strings()
 
 while 1:
-    time.sleep(4)
+    time.sleep(3)

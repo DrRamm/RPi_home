@@ -212,13 +212,13 @@ while True:
             HOURS_RELAY_ENABLE = 1
             break
 
-    print ("\n FLOOR DELTA MAX " + str(FLOOR_DELTA_MAX) + "vs DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA MAX" + str(FLOOR_DELTA_MAX)
+    print ("\n FLOOR DELTA MIN " + str(FLOOR_DELTA_MIN) + " vs DS DELTA " + str(DS_DELTA) + " vs FLOOR DELTA MAX " + str(FLOOR_DELTA_MAX)
             + "\n TEMP AVR " + str(TEMP_AVR) + " vs AIR TEMP " + str(AIR_TEMP)
             + "\n RELAY MODE STATUS " + str(RELAY_MODE)
             + "\n RELAY " + str(RELAY_STATUS)
             + "\n HOURS " + str(HOURS) + " vs CURR HOUR " + str(CURR_HOUR)
             + "\n HOURS RELAY STATUS " + str(HOURS_RELAY_ENABLE)
-            + "\n NOW DATE " + str(NOW_DATE.isoweekday()) 
+            + "\n NOW DATE " + str(NOW_DATE.isoweekday())
             + "\n NOW HOUR " + str(CURR_HOUR))
 
     if str(RELAY_MODE) == 'on':
@@ -227,11 +227,11 @@ while True:
         disable_relay()
     elif str(RELAY_MODE) == 'auto':
         if float(TEMP_AVR) < float(AIR_TEMP) and float(DS_DELTA) > float(FLOOR_DELTA_MIN):
-            if (str(HOURS_MODE) == 'on' and HOURS_RELAY_ENABLE == 1) or str(HOURS_MODE) == 'off':
+            if (str(HOURS_MODE) == 'on' and int(HOURS_RELAY_ENABLE) == 1) or str(HOURS_MODE) == 'off':
                 enable_relay()
             else:
                 disable_relay()
-        elif float(DS_DELTA) > float(FLOOR_DELTA_MAX) and HOURS_RELAY_ENABLE == 1:
+        elif float(DS_DELTA) > float(FLOOR_DELTA_MAX) and int(HOURS_RELAY_ENABLE) == 1:
             enable_relay()
         else:
             disable_relay()
