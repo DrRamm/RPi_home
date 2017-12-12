@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import time
 import telepot
@@ -396,4 +395,4 @@ print 'I am listening ...'
 initial_strings()
 
 while 1:
-    time.sleep(3)
+    time.sleep(5)
