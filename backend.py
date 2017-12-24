@@ -230,4 +230,4 @@ while True:
         else:
             disable_relay()
 
-time.sleep(10)
+time.sleep(100)

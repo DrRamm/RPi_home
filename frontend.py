@@ -117,7 +117,7 @@ def get_values():
 
     bot.sendMessage(chat_id, values_string % (
             get_relay_mode(), RELAY_STATUS, str(DS_1)[:5], str(DS_2)[:5], str(float(DS_2)-float(DS_1))[:5],
-            FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5],
+            FLOOR_DELTA_MIN, FLOOR_DELTA_MAX, str(BMP_P)[:5], str(DHT_H)[:5], str((float(BMP_T) + float(DHT_T)) / 2)[:5] if float(BMP) > 0 else str(DHT_T),
             AIR_TEMP, get_hours(), get_hours_wend(), get_hours_mode()))
 
 def enable_relay():
